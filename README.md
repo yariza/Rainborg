@@ -9,6 +9,7 @@ Parallelized ray tracer capable of rendering rainbows
 - [Computing the scattering properties of participating media using Lorenz-Mie theory](http://dl.acm.org/citation.cfm?id=1276452)
 - [Rainbow Tutorial - The Great Skywatcher](http://darksilverflame.deviantart.com/art/Rainbow-Tutorial-The-Great-Skywatcher-Guide-201667461)
 - [GPU Papers](https://mediatech.aalto.fi/~timo/HPG2009/index.html)
+- [Voxels](http://research.michael-schwarz.com/publ/files/vox-siga10.pdf)
 
 ### Todo:
 
