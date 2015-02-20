@@ -9,3 +9,19 @@ Parallelized ray tracer capable of rendering rainbows
 - [Computing the scattering properties of participating media using Lorenz-Mie theory](http://dl.acm.org/citation.cfm?id=1276452)
 - [Rainbow Tutorial - The Great Skywatcher](http://darksilverflame.deviantart.com/art/Rainbow-Tutorial-The-Great-Skywatcher-Guide-201667461)
 - [GPU Papers](https://mediatech.aalto.fi/~timo/HPG2009/index.html)
+
+### Todo:
+
+- Look into SFML
+- Triangle mesh representation (design for easy bucket-ing to voxels)
+- Parsing (probably xml unless we find something better)
+- UI
+    + camera controls (WASD-FG) (if we get it working semi-realtime)
+    + extra: dragging camera
+- Initial prototype:
+    + AO
+- Look into dispersion, refraction, transparent materials oh god (BTDF)
+- Write math classes for Vector operations etc. (no Eigen :( )
+- Figure out what exactly to parallelize (e.g. voxellization, monte carlo integration, channel-specific)
+- Look into cuRAND/other random number generators
+- Triangle rasterization onto voxels: GPU problem
