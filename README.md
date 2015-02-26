@@ -10,6 +10,7 @@ Parallelized ray tracer capable of rendering rainbows
 - [Rainbow Tutorial - The Great Skywatcher](http://darksilverflame.deviantart.com/art/Rainbow-Tutorial-The-Great-Skywatcher-Guide-201667461)
 - [GPU Papers](https://mediatech.aalto.fi/~timo/HPG2009/index.html)
 - [Voxels](http://research.michael-schwarz.com/publ/files/vox-siga10.pdf)
+- [GPU Voxels](http://research.michael-schwarz.com/publ/files/vox-siga10.pdf)
 
 ### Todo:
 
