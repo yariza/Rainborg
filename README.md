@@ -1,6 +1,31 @@
 # Rainborg
 Parallelized ray tracer capable of rendering rainbows
 
+### Todo: (actually this time)
+
+- Rendering
+    + Spheres (with lighting)
+    + Optional import mesh, boundary
+- Simulation
+    + Do the thing
+    + Go through FOSSSim, stepper
+    + Boundary/collision detection handling (static rigid objects)
+    + Serial
+        * external forces (gravity)
+        * predict position
+        * find neighbors
+        * jacobi iterator
+            - constraint, lambda
+            - s-correction
+            - calculate delta-p
+            - collision detection response
+            - update positions
+        * vorticity confinement
+        * position update
+    + Parallel
+        * Buckets, arbitrary acceleration data structures
+        * same thing...
+    + Future
 
 ### References 
 
