@@ -1,6 +1,13 @@
 # Rainborg
 Parallelized ray tracer capable of rendering rainbows
 
+### External Libraries
+    OpenGL
+    GLM
+    GLFW
+    RapidXML
+    TCLAP
+
 ### Todo: (actually this time)
 
 - Rendering
