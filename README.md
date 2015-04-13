@@ -15,6 +15,17 @@ Parallelized ray tracer capable of rendering rainbows
     + Initialize things?? 
         - Load Files
         - Create scenes + data structures
+- Parser: 
+    + Scene Parser
+        - XML nodes: 
+        - fluid block positions, rest densities, colors, velocity, mass
+            * fluid constants - viscosity, etc
+        - fluid boundaries
+        - camera position, rotation
+        - timestep, timeframe
+    + Mesh Parser
+        - obj file, ply (or whatever)
+        - translate to mesh boundary object triangles
 - Scene: 
     + Boundaries -> Mesh objects
     + FluidSim
