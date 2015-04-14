@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <glm/glm.hpp>
+#include "Simulation.h"
 
 static void error_callback(int error, const char* description)
 {
