@@ -12,6 +12,9 @@ bool Stepper::stepScene(Scene& scene, scalar dt){
 
     // Treat FluidForces and ForceForOtherThings separately... 
 
+    // fluid.accumulateGradU() // makes more sense 
+    
+
     // Accumulate forces for fluids
     // scene.accumulateFluidGradU(F); 
     // F *= -1.0 / mass

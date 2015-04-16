@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "Fluid.h"
-#include "Force.h"
+#include "FluidForce.h"
 
 
 class Scene
@@ -15,7 +15,7 @@ public:
 private:
     std::vector<Fluid> fluids; 
     //std::vector<Boundary> boundaries;
-    std::vector<Force> forces;     
+    std::vector<FluidForce> fluid_forces;     
     
 };
 

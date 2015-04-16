@@ -1,4 +1,4 @@
-#include "Force.h"
+#include "FluidForce.h"
 
-Force::~Force()
+FluidForce::~FluidForce()
 {}

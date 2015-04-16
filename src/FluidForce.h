@@ -1,13 +1,13 @@
-#ifndef __FORCE_H__
-#define __FORCE_H__
+#ifndef __FLUIDFORCE_H__
+#define __FLUIDFORCE_H__
 
 #include "MathDefs.h"
 
-class Force {
+class FluidForce {
 
 public:
-    virtual ~Force();
-    virtual void addGradEToTotal();
+    virtual ~FluidForce();
+//    virtual void addGradEToTotal();
 
 
 
