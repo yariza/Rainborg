@@ -14,7 +14,7 @@ public:
     
 
 private: 
-    int num_particles;
+    int f_numParticles;
     scalar f_mass; // float particle mass, shared by all
     scalar f_p0; // rest density
     Vector3s *f_pos; // actual positions

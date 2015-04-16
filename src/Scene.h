@@ -15,7 +15,7 @@ public:
 private:
     std::vector<Fluid> fluids; 
     //std::vector<Boundary> boundaries;
-    std::vector<FluidForce> fluid_forces;     
+    std::vector<FluidForce*> fluid_forces;     
     
 };
 
