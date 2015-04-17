@@ -91,10 +91,40 @@ scalar FluidBoundingBox::depth(){
 }
 
 // So... I guess this particular function deals with all the particles at once? 
-void FluidBoundingBox::dealWithCollisions(scalar *pos, int numParticles){    
+void FluidBoundingBox::dealWithCollisions(scalar *pos, scalar *dpos, int numParticles){    
+    scalar pposX; 
+    scalar pposY; 
+    scalar pposZ; 
+    
     for(int i = 0; i < numParticles; ++i){
-        if(pos[i*3] < m_minX + m_eps){
-            pos[i*3] = m_minX + m_eps; 
+        pposX = pos[i*3] + dpos[i*3];
+        pposY = pos[i*3+1] + dpos[i*3+1];
+        pposZ = pos[i*3+2] + dpos[i*3+2]; 
+        
+        if(pposX < m_minX + m_eps){
+            dpos[i*3] = m_minX + m_eps - pos[i*3];
+        }
+        else if(pposX > m_maxX - m_eps){
+            dpos[i*3] = m_maxX - m_eps - pos[i*3]; 
+        }
+        if(pposY < m_minY + m_eps){
+            dpos[i*3+1] = m_minY + m_eps - pos[i*3+1];
+        }
+        else if(pposY > m_maxY - m_eps){
+            dpos[i*3+1] = m_maxY - m_eps - pos[i*3+1];
+        }
+        if(pposZ < m_minZ + m_eps){
+            dpos[i*3+2] = m_minZ + m_eps - pos[i*3+2];
+        }
+        else if(pposZ > m_maxZ - m_eps){
+            dpos[i*3+2] = m_maxZ - m_eps - pos[i*3+2];
+        }
+
+
+
+/*
+        if(pos[i*3] + dpos[i*3] < m_minX + m_eps){
+            pos[i*3] + dpos[i*3] = m_minX + m_eps; 
         }       
         else if(pos[i*3] > m_maxX - m_eps){
             pos[i*3] = m_maxX - m_eps;
@@ -111,6 +141,7 @@ void FluidBoundingBox::dealWithCollisions(scalar *pos, int numParticles){
         else if(pos[i*3+2] > m_maxZ - m_eps){
             pos[i*3+2] = m_maxZ - m_eps;
         }
+        */
     }
 }
 

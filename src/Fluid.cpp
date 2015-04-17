@@ -1,18 +1,30 @@
 #include "Fluid.h"
 #include "Scene.h"
 
-Fluid::Fluid(int numParticles) {
+Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeighbors) 
+: m_fpmass(mass)
+, m_p0(p0)
+, m_h(h)
+, m_iters(iters)
+, m_maxNeighbors(maxNeighbors)
+{
     // Allocate memory for m_pos, m_ppos, m_vel, m_accumForce? 
 
     m_numParticles = numParticles;
     m_pos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_ppos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    m_dpos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_vel = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_accumForce = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    m_gridInd = (int *)malloc(numParticles * sizeof(int));
+    m_grid = NULL; // don't know bounding box yet
+    m_gridCount = NULL;
 
     assert (m_pos != NULL);
     assert(m_ppos != NULL);
+    assert(m_dpos != NULL);
     assert(m_vel != NULL);
+    assert(m_gridInd != NULL);
     assert(m_accumForce != NULL);
 }
 
@@ -22,32 +34,59 @@ Fluid::Fluid(const Fluid& otherFluid){
     m_fpmass = otherFluid.getFPMass();
     m_p0 = otherFluid.getRestDensity();
     m_h = otherFluid.getKernelH(); 
-    
+    m_iters = otherFluid.getNumIterations(); 
+    m_maxNeighbors = otherFluid.getMaxNeighbors();
+
     // Allocate memory 
     m_pos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     m_ppos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
+    m_dpos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar)); 
     m_vel = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     m_accumForce = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
+    m_gridInd = (int *)malloc(m_numParticles * sizeof(int));
+ 
 
     assert (m_pos != NULL);
     assert(m_ppos != NULL);
+    assert(m_dpos != NULL);
     assert(m_vel != NULL);
     assert(m_accumForce != NULL);
-
+    assert(m_gridInd != NULL); 
     // Set positions, velocity 
     // Note: predicted positions, accumulatedForces are recalculated each time step so no point copying those
+
 
     memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * 3 * sizeof(scalar));
     memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * 3 * sizeof(scalar));
 
-   m_boundingBox = otherFluid.getBoundingBox(); 
+
+    m_boundingBox = otherFluid.getBoundingBox(); 
+
+    m_gridX = ceil(m_boundingBox.width()/m_h);
+    m_gridY = ceil(m_boundingBox.height()/m_h);
+    m_gridZ = ceil(m_boundingBox.depth()/m_h);
+
+
+    m_grid = (int *)malloc(m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int)); 
+    m_gridCount = (int *)malloc(m_gridX * m_gridY * m_gridZ * sizeof(int)); 
+
+   
+    
+    assert(m_grid != NULL);
+    assert(m_gridCount != NULL);
 }
 
 Fluid::~Fluid(){
     free(m_pos);
     free(m_ppos);
+    free(m_dpos);
     free(m_vel);
     free(m_accumForce);
+    free(m_gridInd);
+    if(m_grid != NULL)
+        free(m_grid);
+    if(m_gridCount != NULL)
+        free(m_gridCount);
 }
 
 void Fluid::setFPMass(scalar fpm){
@@ -79,11 +118,31 @@ void Fluid::setKernelH(scalar h){
     m_h = h; 
 }
 
+void Fluid::setNumIterations(int iter){
+    m_iters = iter;
+}
 
 void Fluid::setBoundingBox(FluidBoundingBox& bound){
     m_boundingBox = bound; 
+
+    if(m_grid != NULL)
+        free(m_grid);
+    if(m_gridCount != NULL)
+        free(m_gridCount);
+
+    m_gridX = ceil(m_boundingBox.width()/m_h);
+    m_gridY = ceil(m_boundingBox.height()/m_h);
+    m_gridZ = ceil(m_boundingBox.depth()/m_h);
+    m_grid = (int *)malloc(m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int)); 
+    m_gridCount = (int *)malloc(m_gridX * m_gridY * m_gridZ * sizeof(int)); 
+
+    assert(m_grid != NULL);
+    assert(m_gridCount != NULL);
 }
 
+int Fluid::getMaxNeighbors() const{
+    return m_maxNeighbors;
+}
 
 int Fluid::getNumParticles() const{
     return m_numParticles;
@@ -101,6 +160,10 @@ scalar Fluid::getKernelH() const{
     return m_h;
 }
 
+int Fluid::getNumIterations() const{
+    return m_iters;
+}
+
 scalar* Fluid::getFPPos() const{
     return m_pos;
 }
@@ -116,29 +179,29 @@ const FluidBoundingBox& Fluid::getBoundingBox() const{
 
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
-        accumulateForce(scene); // makes more sense 
+    accumulateForce(scene); // makes more sense 
+    updateVelocityFromForce(dt); 
+    updatePredPosition(dt); 
 
-        // Print accumulated force
-        for(int i = 0; i < m_numParticles; ++i){
-            std::cout << m_accumForce[i*3] << ", " << m_accumForce[i*3+1] << ", " << m_accumForce[i*3+2] << std::endl;
-        }
+    // find neighbors for each particle 
+    buildGrid();  
+    //
 
-        updateVelocity(dt); 
-        std::cout << std::endl;
-        for(int i = 0; i < m_numParticles; ++i){
-            std::cout << m_vel[i*3] << ", " << m_vel[i*3+1] << ", " << m_vel[i*3+2] << std::endl;
-        }
+    // loop for solver iterations: 
+        // for all particles calculate lambda
 
-        // Print updated velocities
+        // for all particles calculate deltaPi
+            // deal with collision detection and response
 
-        updatePredPosition(dt); 
-        std::cout << std::endl;
-        for(int i = 0; i < m_numParticles; ++i){
-            std::cout << m_ppos[i*3] << ", " << m_ppos[i*3+1] << ", " << m_ppos[i*3+2] << std::endl;
-        }
+        // for all particles
+            // update predicted position
+    
+    // for all particles: 
+        // update velocity = 1/dt (ppos - pi)
+        // apply vorticity confinement and XSPH viscosity to velocity
+        // update position pos = ppos // just move pointers around jeez
 
-        // Print updated positions
-
+    
 }
 
 void Fluid::accumulateForce(Scene& scene){
@@ -158,7 +221,7 @@ void Fluid::accumulateForce(Scene& scene){
     }
 }
 
-void Fluid::updateVelocity(scalar dt){
+void Fluid::updateVelocityFromForce(scalar dt){
     for(int i = 0; i < m_numParticles*3; ++i){
         m_vel[i] += m_accumForce[i] * dt; 
     }    
@@ -169,4 +232,40 @@ void Fluid::updatePredPosition(scalar dt){
         m_ppos[i] = m_pos[i] + m_vel[i] * dt;
     }
 }
+
+void Fluid::getGridIdx(scalar x, scalar y, scalar z, int& idx){
+    // in our case...
+    int i = (x - m_boundingBox.minX())/m_h; 
+    int j = (y - m_boundingBox.minY())/m_h;
+    int k = (z - m_boundingBox.minZ())/m_h; 
+
+    idx = (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
+
+}
+
+// Each particle calculates its index in the grid
+// The grid gets its 
+void Fluid::buildGrid(){
+
+
+
+}
+
+void Fluid::preserveOwnBoundary(){
+    m_boundingBox.dealWithCollisions(m_ppos, m_dpos, m_numParticles);
+}
+
+void Fluid::recalculateVelocity(scalar dt){
+    for(int i = 0; i < m_numParticles*3; ++i){
+        m_vel[i] = (m_ppos[i] - m_pos[i])/dt; 
+    }
+}
+
+void Fluid::updateFinalPosition(){
+    scalar *temp = m_pos; 
+    m_pos = m_ppos; // predicted positions become real positions
+    m_ppos = temp; // recalculate predicted positions anyway
+}
+
+
 

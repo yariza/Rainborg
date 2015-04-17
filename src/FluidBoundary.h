@@ -7,7 +7,7 @@ class FluidBoundary {
 
 public:
     virtual ~FluidBoundary();
-    virtual void dealWithCollisions(scalar *pos, int numParticles) = 0; 
+    virtual void dealWithCollisions(scalar *pos, scalar *dpos, int numParticles) = 0; 
 
 };
 

@@ -13,7 +13,7 @@ public:
     FluidBoundingBox& operator=(const FluidBoundingBox& otherBound);
 
     virtual ~FluidBoundingBox(); 
-    virtual void dealWithCollisions(scalar *pos, int numParticles); 
+    virtual void dealWithCollisions(scalar *pos, scalar *dpos, int numParticles); 
 
     // Need the bounds for calculating the grid
     scalar minX() const; 

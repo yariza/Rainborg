@@ -14,7 +14,7 @@ class Fluid{
 
 public:
 
-    Fluid(int numParticles);
+    Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeigh);
     Fluid(const Fluid& otherFluid);
     ~Fluid();
 
@@ -24,9 +24,12 @@ public:
     void setFPPos(int fp, const Vector3s& pos);
     void setFPVel(int fp, const Vector3s& vel);
     void setKernelH(scalar h);
+    void setNumIterations(int iter); 
     void setBoundingBox(FluidBoundingBox& newBound);
 
     int getNumParticles() const;
+    int getNumIterations() const;
+    int getMaxNeighbors() const;
     scalar getFPMass() const;
     scalar getRestDensity() const;
     scalar getKernelH() const;
@@ -37,32 +40,47 @@ public:
 private: 
 
     void accumulateForce(Scene& scene);     
-    void updateVelocity(scalar dt); 
+    void updateVelocityFromForce(scalar dt); 
     void updatePredPosition(scalar dt); 
+    void buildGrid(); // how to parallelize? 
+    void getGridIdx(scalar x, scalar y, scalar z, int& idx); // make separate in case of smarter coallesced memory access    
+ 
     //void findNeighbors(); 
     //void dealWithCollisions(Scene& scene); // ... Deal with scene collisions
-    //void preserveOwnBoundary(); // Make sure within own bounding box
+    void preserveOwnBoundary(); // Make sure within own bounding box
+
+    void recalculateVelocity(scalar dt); 
+    // Vorticity confinement, XSPH
+    void updateFinalPosition();     
     
     
     int m_numParticles;
+    int m_maxNeighbors; 
+
+    int *m_grid; // grid of particles, x, then y, then z, size w*h*d*maxNeighbors
+    int *m_gridCount; // store number of particles in grid so far (needed for GPU)
+    int *m_gridInd; // indices for grid per particle
+    int m_gridX; 
+    int m_gridY; 
+    int m_gridZ; 
+
     scalar m_fpmass; // float particle mass, shared by all
     scalar m_p0; // rest density
     scalar *m_pos; // actual positinos
     scalar *m_ppos; // predicted positions
+    scalar *m_dpos; // change in positions
     scalar *m_vel; 
 
     scalar m_h; // kernel radius
+    int m_iters; // how many iterations through solver?
 
     scalar *m_accumForce; 
 
-    // Neighbors? 
+    
     // lambdas?
-    // dP? 
-
     FluidBoundingBox m_boundingBox; 
 
     // Colors? 
-    // Boundary?
  
 };
 
