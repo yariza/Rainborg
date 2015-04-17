@@ -38,13 +38,22 @@ void testBasicSetup(){
     scene.insertFluidForce(sgf);
     scene.insertFluidForce(sgff);
 
-    Fluid fluid(10); 
+    Fluid fluid(2);
+    fluid.setFPMass(2.0);
+    fluid.setRestDensity(1.0);
+    fluid.setFPPos(0, Vector3s(1, 2, 3));
+    fluid.setFPVel(0, Vector3s(1, .4, .2));
+    fluid.setFPPos(1, Vector3s(3, 2, 1));
+    fluid.setFPVel(1, Vector3s(-.3, .2, .1));
 
+    std::cout << "adding fluid to scene" << std::endl;
+    scene.insertFluid(fluid);    
+    
     Stepper stepper;   
     
     stepper.stepScene(scene, .1);
 
-    
+    std::cout << "end test" << std::endl;    
 }
 
 

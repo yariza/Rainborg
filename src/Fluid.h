@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstring>
+#include <iostream>
 
 #include "MathDefs.h"
 //#include "Scene.h"
@@ -15,13 +16,23 @@ class Fluid{
 public:
 
     Fluid(int numParticles);
+    Fluid(const Fluid& otherFluid);
     ~Fluid();
  
     void accumulateForce(Scene& scene);     
     void updateVelocity(scalar dt); 
     void updatePredPosition(scalar dt); 
-        
+    void setFPMass(scalar fpm); 
+    void setRestDensity(scalar p0);
+    void setFPPos(int fp, const Vector3s& pos);
+    void setFPVel(int fp, const Vector3s& vel);
 
+    int getNumParticles() const;
+    scalar getFPMass() const;
+    scalar getRestDensity() const;
+    scalar* getFPPos() const;
+    scalar* getFPVel() const;
+    
 private: 
     
     int m_numParticles;
