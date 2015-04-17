@@ -2,6 +2,7 @@
 #define __FLUID_H__
 
 #include <vector>
+#include <cstring>
 
 #include "MathDefs.h"
 //#include "Scene.h"
@@ -14,6 +15,8 @@ class Fluid{
 public:
  
     void accumulateGradU(Scene& scene);     
+    void updateVelocity(scalar dt); 
+    void updatePredPosition(scalar dt); 
         
 
 private: 

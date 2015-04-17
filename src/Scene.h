@@ -13,11 +13,13 @@ public:
     Scene();
     ~Scene();
 
-private:
     std::vector<Fluid> fluids; 
     //std::vector<Boundary> boundaries;
     std::vector<FluidForce*> fluid_forces;     
-    
+   
+private: 
+// be a terrible person and make everything public
+ 
 };
 
 #endif
