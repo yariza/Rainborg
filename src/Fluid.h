@@ -6,8 +6,7 @@
 #include <iostream>
 
 #include "MathDefs.h"
-//#include "Scene.h"
-//#include "FluidForce.h"
+#include "FluidBoundingBox.h"
 
 class Scene;
 
@@ -20,17 +19,20 @@ public:
     ~Fluid();
 
     void stepSystem(Scene& scene, scalar dt);
- 
     void setFPMass(scalar fpm); 
     void setRestDensity(scalar p0);
     void setFPPos(int fp, const Vector3s& pos);
     void setFPVel(int fp, const Vector3s& vel);
+    void setKernelH(scalar h);
+    void setBoundingBox(FluidBoundingBox& newBound);
 
     int getNumParticles() const;
     scalar getFPMass() const;
     scalar getRestDensity() const;
+    scalar getKernelH() const;
     scalar* getFPPos() const;
     scalar* getFPVel() const;
+    const FluidBoundingBox& getBoundingBox() const;
     
 private: 
 
@@ -49,7 +51,15 @@ private:
     scalar *m_ppos; // predicted positions
     scalar *m_vel; 
 
+    scalar m_h; // kernel radius
+
     scalar *m_accumForce; 
+
+    // Neighbors? 
+    // lambdas?
+    // dP? 
+
+    FluidBoundingBox m_boundingBox; 
 
     // Colors? 
     // Boundary?

@@ -6,6 +6,7 @@
 #include "Simulation.h"
 
 #include "FluidSimpleGravityForce.h"
+#include "FluidBoundingBox.h"
 #include "MathDefs.h"
 
 static void error_callback(int error, const char* description)
@@ -38,6 +39,8 @@ void testBasicSetup(){
     scene.insertFluidForce(sgf);
     scene.insertFluidForce(sgff);
 
+    FluidBoundingBox fbox(.1, .3, .2, .4, .1, .5); 
+
     Fluid fluid(2);
     fluid.setFPMass(2.0);
     fluid.setRestDensity(1.0);
@@ -45,6 +48,7 @@ void testBasicSetup(){
     fluid.setFPVel(0, Vector3s(1.1, .4, .2));
     fluid.setFPPos(1, Vector3s(3.2, -.2, 1));
     fluid.setFPVel(1, Vector3s(-.3, .2, .1));
+    fluid.setBoundingBox(fbox);
 
     std::cout << "adding fluid to scene" << std::endl;
     scene.insertFluid(fluid);    
@@ -55,6 +59,12 @@ void testBasicSetup(){
 
     std::cout << "end test" << std::endl;    
 
+//    FluidBoundingBox fbox; 
+//    std::cout << fbox.minX() << std::endl;
+
+    for(int i = 0; i < scene.getFluids().size(); ++i){
+        std::cout << "box: " << scene.getFluids()[i].getBoundingBox().minX() << std::endl;
+    }
 
 }
 
@@ -63,6 +73,7 @@ int main(void)
 {
 
     // Wow this is going to be my terrible, terrible 'test' function thing
+
     testBasicSetup();
     
 

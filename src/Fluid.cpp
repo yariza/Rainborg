@@ -21,6 +21,7 @@ Fluid::Fluid(const Fluid& otherFluid){
     m_numParticles = otherFluid.getNumParticles();
     m_fpmass = otherFluid.getFPMass();
     m_p0 = otherFluid.getRestDensity();
+    m_h = otherFluid.getKernelH(); 
     
     // Allocate memory 
     m_pos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
@@ -38,6 +39,8 @@ Fluid::Fluid(const Fluid& otherFluid){
 
     memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * 3 * sizeof(scalar));
     memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * 3 * sizeof(scalar));
+
+   m_boundingBox = otherFluid.getBoundingBox(); 
 }
 
 Fluid::~Fluid(){
@@ -72,6 +75,16 @@ void Fluid::setFPVel(int fp, const Vector3s& vel){
     m_vel[fp*3+2] = vel[2];
 }
 
+void Fluid::setKernelH(scalar h){
+    m_h = h; 
+}
+
+
+void Fluid::setBoundingBox(FluidBoundingBox& bound){
+    m_boundingBox = bound; 
+}
+
+
 int Fluid::getNumParticles() const{
     return m_numParticles;
 }
@@ -83,6 +96,10 @@ scalar Fluid::getFPMass() const{
 scalar Fluid::getRestDensity() const{
     return m_p0;
 }
+ 
+scalar Fluid::getKernelH() const{
+    return m_h;
+}
 
 scalar* Fluid::getFPPos() const{
     return m_pos;
@@ -91,6 +108,12 @@ scalar* Fluid::getFPPos() const{
 scalar* Fluid::getFPVel() const{
     return m_vel;
 }
+
+
+const FluidBoundingBox& Fluid::getBoundingBox() const{
+    return m_boundingBox;
+}
+
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
         accumulateForce(scene); // makes more sense 
