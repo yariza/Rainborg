@@ -5,6 +5,7 @@
 #include "Fluid.h"
 #include "FluidForce.h"
 
+class Fluid;
 
 class Scene
 {
