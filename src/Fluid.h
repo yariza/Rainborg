@@ -18,10 +18,9 @@ public:
     Fluid(int numParticles);
     Fluid(const Fluid& otherFluid);
     ~Fluid();
+
+    void stepSystem(Scene& scene, scalar dt);
  
-    void accumulateForce(Scene& scene);     
-    void updateVelocity(scalar dt); 
-    void updatePredPosition(scalar dt); 
     void setFPMass(scalar fpm); 
     void setRestDensity(scalar p0);
     void setFPPos(int fp, const Vector3s& pos);
@@ -34,6 +33,10 @@ public:
     scalar* getFPVel() const;
     
 private: 
+
+    void accumulateForce(Scene& scene);     
+    void updateVelocity(scalar dt); 
+    void updatePredPosition(scalar dt); 
     
     int m_numParticles;
     scalar m_fpmass; // float particle mass, shared by all

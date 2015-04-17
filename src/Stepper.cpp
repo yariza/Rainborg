@@ -20,11 +20,10 @@ bool Stepper::stepScene(Scene& scene, scalar dt){
     std::vector<Fluid> fluids = scene.getFluids();
     for(int i = 0; i < fluids.size(); ++i){
         Fluid& fluid = fluids[i];  
+        
+        fluid.stepSystem(scene, dt);
 
-        fluid.accumulateForce(scene); // makes more sense 
-        fluid.updateVelocity(dt); 
-        fluid.updatePredPosition(dt); 
-       
+      
     }
 
     return true;

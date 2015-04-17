@@ -49,6 +49,13 @@ Fluid::~Fluid(){
     free(m_accumForce);
 }
 
+void Fluid::stepSystem(Scene& scene, scalar dt){
+        accumulateForce(scene); // makes more sense 
+        updateVelocity(dt); 
+        updatePredPosition(dt); 
+ 
+}
+
 void Fluid::accumulateForce(Scene& scene){
     std::vector<FluidForce*> fluidForces = scene.getFluidForces();
 
