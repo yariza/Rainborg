@@ -5,6 +5,9 @@
 #include <glm/glm.hpp>
 #include "Simulation.h"
 
+#include "FluidSimpleGravityForce.h"
+#include "MathDefs.h"
+
 static void error_callback(int error, const char* description)
 {
     fputs(description, stderr);
@@ -24,19 +27,39 @@ int foo()
         return 0;
 }
 
+void testBasicSetup(){
+    // I guess.... try initializing a scene? 
+
+    FluidSimpleGravityForce sgf(.1, .2, .3);
+    FluidSimpleGravityForce sgff(Vector3s(.3, .2, .1));
+
+
+    // And then step through it? 
+
+
+
+}
+
+
 int main(void)
 {
+
+    // Wow this is going to be my terrible, terrible 'test' function thing
+    testBasicSetup();
+    
+
+/*
     std::cout << foo() << std::endl;
 
     GLFWwindow* window;
 
     glfwSetErrorCallback(error_callback);
 
-    /* Initialize the library */
+    // Initialize the library
     if (!glfwInit())
         return -1;
 
-    /* Create a windowed mode window and its OpenGL context */
+    // Create a windowed mode window and its OpenGL context
     window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
     if (!window)
     {
@@ -44,16 +67,16 @@ int main(void)
         return -1;
     }
 
-    /* Make the window's context current */
+    // Make the window's context current 
     glfwMakeContextCurrent(window);
 
     glfwSwapInterval(1);
     glfwSetKeyCallback(window, key_callback);
 
-    /* Loop until the user closes the window */
+    // Loop until the user closes the window 
     while (!glfwWindowShouldClose(window))
     {
-        /* Render here */
+        // Render here 
         float ratio;
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -75,16 +98,18 @@ int main(void)
             glVertex3f(0.f, 0.6f, 0.f);
         glEnd();
 
-        /* Swap front and back buffers */
+        // Swap front and back buffers 
         glfwSwapBuffers(window);
 
-        /* Poll for and process events */
+        //  Poll for and process events 
         glfwPollEvents();
     }
 
 
     glfwDestroyWindow(window);
     glfwTerminate();
+
+*/
     return 0;
 }
 

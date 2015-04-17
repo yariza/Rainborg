@@ -13,6 +13,9 @@ class Scene;
 class Fluid{
 
 public:
+
+    Fluid(int numParticles);
+    ~Fluid();
  
     void accumulateForce(Scene& scene);     
     void updateVelocity(scalar dt); 
@@ -20,15 +23,15 @@ public:
         
 
 private: 
-    int f_numParticles;
-    scalar f_mass; // float particle mass, shared by all
-    scalar f_p0; // rest density
-    scalar *f_pos; // actual positinos
-    scalar *f_ppos; // predicted positions
-    scalar *f_vel; 
+    
+    int m_numParticles;
+    scalar m_fpmass; // float particle mass, shared by all
+    scalar m_p0; // rest density
+    scalar *m_pos; // actual positinos
+    scalar *m_ppos; // predicted positions
+    scalar *m_vel; 
 
-    // not much point reallocating memory for the same-sized force update vector each time; store here?
-    scalar *f_accumForce; 
+    scalar *m_accumForce; 
 
     // Colors? 
     // Boundary?

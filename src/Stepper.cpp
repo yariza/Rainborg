@@ -13,17 +13,15 @@ bool Stepper::stepScene(Scene& scene, scalar dt){
     // Treat FluidForces and ForceForOtherThings separately... 
 
     // for all fluids in scene
-    for(int i = 0; i < scene.fluids.size(); ++i){
-        Fluid& fluid = scene.fluids[i];  
+    std::vector<Fluid> fluids = scene.getFluids();
+    for(int i = 0; i < fluids.size(); ++i){
+        Fluid& fluid = fluids[i];  
 
         fluid.accumulateForce(scene); // makes more sense 
         fluid.updateVelocity(dt); 
         fluid.updatePredPosition(dt); 
        
     }
-
-
-
 
     return true;
 }

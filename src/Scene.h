@@ -13,13 +13,17 @@ public:
     Scene();
     ~Scene();
 
-    std::vector<Fluid> fluids; 
-    //std::vector<Boundary> boundaries;
-    std::vector<FluidForce*> fluidForces;     
+    void insertFluid(const Fluid& newFluid); 
+    void insertFluidForce(FluidForce* newFluidForce);
+    std::vector<Fluid>& getFluids();
+    std::vector<FluidForce*>& getFluidForces();
+
+    private: 
+    std::vector<Fluid> m_fluids; 
+    //std::vector<Boundary> boundaries; 
+    std::vector<FluidForce*> m_fluidForces;     
    
-private: 
-// be a terrible person and make everything public
- 
+
 };
 
 #endif
