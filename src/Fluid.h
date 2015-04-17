@@ -14,7 +14,7 @@ class Fluid{
 
 public:
  
-    void accumulateGradU(Scene& scene);     
+    void accumulateForce(Scene& scene);     
     void updateVelocity(scalar dt); 
     void updatePredPosition(scalar dt); 
         
@@ -28,7 +28,7 @@ private:
     scalar *f_vel; 
 
     // not much point reallocating memory for the same-sized force update vector each time; store here?
-    scalar *f_accumGradU; 
+    scalar *f_accumForce; 
 
     // Colors? 
     // Boundary?

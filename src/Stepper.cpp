@@ -16,7 +16,7 @@ bool Stepper::stepScene(Scene& scene, scalar dt){
     for(int i = 0; i < scene.fluids.size(); ++i){
         Fluid& fluid = scene.fluids[i];  
 
-        fluid.accumulateGradU(scene); // makes more sense 
+        fluid.accumulateForce(scene); // makes more sense 
         fluid.updateVelocity(dt); 
         fluid.updatePredPosition(dt); 
        
