@@ -17,10 +17,10 @@ Fluid::Fluid(int numParticles) {
 }
 
 Fluid::~Fluid(){
-    delete m_pos;
-    delete m_ppos;
-    delete m_vel;
-    delete m_accumForce;
+    free(m_pos);
+    free(m_ppos);
+    free(m_vel);
+    free(m_accumForce);
 }
 
 void Fluid::accumulateForce(Scene& scene){

@@ -4,6 +4,8 @@
 #include "Scene.h"
 #include "MathDefs.h"
 
+#define VERBOSE false
+
 class Stepper
 {
 public:

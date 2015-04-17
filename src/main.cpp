@@ -38,6 +38,13 @@ void testBasicSetup(){
     scene.insertFluidForce(sgf);
     scene.insertFluidForce(sgff);
 
+    Fluid fluid(10); 
+
+    Stepper stepper;   
+    
+    stepper.stepScene(scene, .1);
+
+    
 }
 
 
