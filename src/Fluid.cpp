@@ -51,9 +51,33 @@ Fluid::~Fluid(){
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
         accumulateForce(scene); // makes more sense 
+
+        // Print accumulated force
+        for(int i = 0; i < m_numParticles; ++i){
+            std::cout << m_accumForce[i*3] << ", " << m_accumForce[i*3+1] << ", " << m_accumForce[i*3+2] << std::endl;
+        }
+
         updateVelocity(dt); 
+        std::cout << std::endl;
+        for(int i = 0; i < m_numParticles; ++i){
+            std::cout << m_vel[i*3] << ", " << m_vel[i*3+1] << ", " << m_vel[i*3+2] << std::endl;
+        }
+
+
+        // Print updated velocities
+
+
         updatePredPosition(dt); 
+        std::cout << std::endl;
+        for(int i = 0; i < m_numParticles; ++i){
+            std::cout << m_ppos[i*3] << ", " << m_ppos[i*3+1] << ", " << m_ppos[i*3+2] << std::endl;
+        }
+
+
+        // Print updated positions
  
+
+
 }
 
 void Fluid::accumulateForce(Scene& scene){
@@ -67,9 +91,9 @@ void Fluid::accumulateForce(Scene& scene){
     
     // F *= -1.0/mass
     for(int i = 0; i < m_numParticles; ++i){
-        m_accumForce[i] /= -m_fpmass; 
-        m_accumForce[i+1] /= -m_fpmass;
-        m_accumForce[i+2] /= -m_fpmass;
+        m_accumForce[i*3] /= -m_fpmass; 
+        m_accumForce[i*3+1] /= -m_fpmass;
+        m_accumForce[i*3+2] /= -m_fpmass;
     }
 }
 
