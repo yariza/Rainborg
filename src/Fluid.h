@@ -37,6 +37,10 @@ private:
     void accumulateForce(Scene& scene);     
     void updateVelocity(scalar dt); 
     void updatePredPosition(scalar dt); 
+    //void findNeighbors(); 
+    //void dealWithCollisions(Scene& scene); // ... Deal with scene collisions
+    //void preserveOwnBoundary(); // Make sure within own bounding box
+    
     
     int m_numParticles;
     scalar m_fpmass; // float particle mass, shared by all
