@@ -2,8 +2,11 @@
 #define __SCENE_H__
 
 #include <vector>
+#include <iostream>
 #include "Fluid.h"
 #include "FluidForce.h"
+
+//#define VERBOSE true
 
 class Fluid;
 

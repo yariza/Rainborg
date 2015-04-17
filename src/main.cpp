@@ -30,13 +30,13 @@ int foo()
 void testBasicSetup(){
     // I guess.... try initializing a scene? 
 
-    FluidSimpleGravityForce sgf(.1, .2, .3);
-    FluidSimpleGravityForce sgff(Vector3s(.3, .2, .1));
 
+    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(.1, .2, .3);
+    FluidSimpleGravityForce* sgff = new FluidSimpleGravityForce(Vector3s(.3, .2, .1));
 
-    // And then step through it? 
-
-
+    Scene scene;
+    scene.insertFluidForce(sgf);
+    scene.insertFluidForce(sgff);
 
 }
 
