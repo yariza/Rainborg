@@ -206,9 +206,23 @@ const FluidBoundingBox& Fluid::getBoundingBox() const{
 
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
+
+
     accumulateForce(scene); // makes more sense 
+    // Print force: 
+    for(int i = 0; i < m_numParticles; ++i){
+        //std::cout << m_accumForce[i] << std::endl;
+    } 
+
     updateVelocityFromForce(dt); 
+    for(int i = 0; i < m_numParticles; ++i){
+        //std::cout << m_vel[i] << std::endl;
+    }
+
     updatePredPosition(dt); 
+    for(int i = 0; i < m_numParticles; ++i){
+        //std::cout << m_ppos[i] << std::endl;
+    }
 
     // find neighbors for each particle 
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure

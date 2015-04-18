@@ -31,7 +31,7 @@ void testBasicSetup(){
     // I guess.... try initializing a scene? 
 
 
-    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(.1, .2, .3);
+    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-1.1, .2, .3);
     FluidSimpleGravityForce* sgff = new FluidSimpleGravityForce(Vector3s(.3, .2, .1));
 
     Scene scene;
