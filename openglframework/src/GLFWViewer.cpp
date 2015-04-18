@@ -146,21 +146,27 @@ void GLFWViewer::mouseMotionEvent(double xMouse, double yMouse) {
 }
 
 void GLFWViewer::idle() {
-    m_idleCallback();
+    if (m_idleCallback)
+        m_idleCallback();
 }
 
 void GLFWViewer::display() {
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
-    m_displayCallback(width, height);
+    if (m_displayCallback)
+        m_displayCallback(width, height);
 }
 
 void GLFWViewer::mainLoop() {
 
-    glfwSetFramebufferSizeCallback(m_window, m_reshapeCallback);
-    glfwSetKeyCallback(m_window, m_keyboardCallback);
-    glfwSetMouseButtonCallback(m_window, m_mouseButtonCallback);
-    glfwSetCursorPosCallback(m_window, m_mouseMotionCallback);
+    if (m_reshapeCallback)
+        glfwSetFramebufferSizeCallback(m_window, m_reshapeCallback);
+    if (m_keyboardCallback)
+        glfwSetKeyCallback(m_window, m_keyboardCallback);
+    if (m_mouseButtonCallback)
+        glfwSetMouseButtonCallback(m_window, m_mouseButtonCallback);
+    if (m_mouseMotionCallback)
+        glfwSetCursorPosCallback(m_window, m_mouseMotionCallback);
 
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
