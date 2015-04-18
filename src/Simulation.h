@@ -3,18 +3,18 @@
 
 #include "Scene.h"
 #include "Stepper.h"
-#include "Renderer.h"
+#include "SceneRenderer.h"
 
 class Simulation
 {
 public:
-    Simulation();
+    Simulation(Scene* scene, Stepper* stepper, SceneRenderer* renderer);
     ~Simulation();
     
 private:
     Scene *m_scene;
     Stepper *m_stepper;
-    Renderer *m_renderer;
+    SceneRenderer *m_renderer;
 };
 
 #endif

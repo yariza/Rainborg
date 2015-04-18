@@ -56,6 +56,7 @@ else( GLM_FOUND )
 endif( GLM_FOUND )
 
 add_subdirectory(openglframework)
+include_directories(${CMAKE_SOURCE_DIR}/include/openglframework)
 
 add_executable ( testflow ${Headers} ${Templates} ${Sources})
 

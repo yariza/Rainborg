@@ -56,6 +56,7 @@ file (
   GLOB_RECURSE
   OPENGLFRAMEWORK_SOURCES_FILES
   src/*
+  include/*
 )
 
 # Require the opengl-framework code to be compiled in a static library
@@ -65,6 +66,7 @@ ADD_LIBRARY (
    ${OPENGLFRAMEWORK_SOURCES_FILES}
 )
 
+TARGET_INCLUDE_DIRECTORIES(openglframework PUBLIC include src)
 TARGET_LINK_LIBRARIES(openglframework ${GLEW_LIBRARIES} ${OPENGL_LIBRARY} ${GLFW_LIBRARIES} ${EXTRA_LIBS} freeglut_static)
 
 # If we need to compile the examples
