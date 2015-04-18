@@ -26,6 +26,7 @@ public:
     void setKernelH(scalar h);
     void setNumIterations(int iter); 
     void setBoundingBox(FluidBoundingBox& newBound);
+    void setColor(int i, const Vector4s& col); 
 
     int getNumParticles() const;
     int getNumIterations() const;
@@ -37,6 +38,7 @@ public:
     //scalar* getFPVel() const;
     Vector3s* getFPPos() const;
     Vector3s* getFPVel() const; 
+    Vector4s* getColors() const;
     const FluidBoundingBox& getBoundingBox() const;
     
 private: 
@@ -93,6 +95,7 @@ private:
     FluidBoundingBox m_boundingBox; 
 
     // Colors? 
+    Vector4s *m_colors;     
  
 };
 

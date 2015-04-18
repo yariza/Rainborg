@@ -23,6 +23,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
     m_dpos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
     m_vel = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
     m_accumForce = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    m_colors = (Vector4s *)malloc(numParticles * sizeof(Vector4s)); 
 
     m_gridInd = (int *)malloc(numParticles * sizeof(int));
     m_grid = NULL; // don't know bounding box yet
@@ -35,6 +36,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
     assert(m_vel != NULL);
     assert(m_gridInd != NULL);
     assert(m_accumForce != NULL);
+    assert(m_colors != NULL); 
 }
 
 
@@ -60,6 +62,7 @@ Fluid::Fluid(const Fluid& otherFluid){
     m_dpos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
     m_vel = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
     m_accumForce = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
+    m_colors = (Vector4s *)malloc(m_numParticles * sizeof(Vector4s)); 
 
     assert (m_pos != NULL);
     assert(m_ppos != NULL);
@@ -68,6 +71,7 @@ Fluid::Fluid(const Fluid& otherFluid){
     assert(m_vel != NULL);
     assert(m_accumForce != NULL);
     assert(m_gridInd != NULL); 
+    assert(m_colors != NULL); 
     // Set positions, velocity 
     // Note: predicted positions, accumulatedForces are recalculated each time step so no point copying those
 
@@ -77,6 +81,7 @@ Fluid::Fluid(const Fluid& otherFluid){
 
     memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * sizeof(Vector3s)); 
     memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * sizeof(Vector3s)); 
+    memcpy(m_colors, otherFluid.getColors(), m_numParticles * sizeof(Vector4s)); 
 
     m_boundingBox = otherFluid.getBoundingBox(); 
 
@@ -98,6 +103,7 @@ Fluid::~Fluid(){
     free(m_dpos);
     free(m_vel);
     free(m_accumForce);
+    free(m_colors); 
     free(m_gridInd);
     if(m_grid != NULL)
         free(m_grid);
@@ -159,6 +165,10 @@ void Fluid::setBoundingBox(FluidBoundingBox& bound){
     assert(m_gridCount != NULL);
 }
 
+void Fluid::setColor(int i, const Vector4s& col){
+    m_colors[i] = col; 
+}
+
 int Fluid::getMaxNeighbors() const{
     return m_maxNeighbors;
 }
@@ -200,6 +210,10 @@ Vector3s* Fluid::getFPVel() const{
     return m_vel;
 }
 
+Vector4s* Fluid::getColors() const{
+    return m_colors; 
+}
+
 const FluidBoundingBox& Fluid::getBoundingBox() const{
     return m_boundingBox;
 }
@@ -211,17 +225,17 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     accumulateForce(scene); // makes more sense 
     // Print force: 
     for(int i = 0; i < m_numParticles; ++i){
-        //std::cout << m_accumForce[i] << std::endl;
+        printVec3(m_accumForce[i]); 
     } 
 
     updateVelocityFromForce(dt); 
     for(int i = 0; i < m_numParticles; ++i){
-        //std::cout << m_vel[i] << std::endl;
+        printVec3(m_vel[i]); 
     }
 
     updatePredPosition(dt); 
     for(int i = 0; i < m_numParticles; ++i){
-        //std::cout << m_ppos[i] << std::endl;
+        printVec3(m_ppos[i]);
     }
 
     // find neighbors for each particle 
