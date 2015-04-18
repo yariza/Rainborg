@@ -33,8 +33,10 @@ public:
     scalar getFPMass() const;
     scalar getRestDensity() const;
     scalar getKernelH() const;
-    scalar* getFPPos() const;
-    scalar* getFPVel() const;
+    //scalar* getFPPos() const;
+    //scalar* getFPVel() const;
+    Vector3s* getFPPos() const;
+    Vector3s* getFPVel() const; 
     const FluidBoundingBox& getBoundingBox() const;
     
 private: 
@@ -44,8 +46,12 @@ private:
     void updatePredPosition(scalar dt); 
     void clearGrid();
     void buildGrid(); // how to parallelize? 
-    void getGridIdx(scalar x, scalar y, scalar z, int& idx); // make separate in case of smarter coallesced memory access    
- 
+//    void getGridIdx(scalar x, scalar y, scalar z, int& idx); // make separate in case of smarter coallesced memory access    
+    void getGridIdx(Vector3s &pos, int& idx);  
+
+    void calculateLambdas(); 
+    void calculatedPos(); 
+  
     void dealWithCollisions(Scene& scene); // ... Deal with scene collisions
     void preserveOwnBoundary(); // Make sure within own bounding box
 
@@ -67,19 +73,23 @@ private:
 
     scalar m_fpmass; // float particle mass, shared by all
     scalar m_p0; // rest density
-    scalar *m_pos; // actual positinos
-    scalar *m_ppos; // predicted positions
+    //scalar *m_pos; // actual positinos
+    //scalar *m_ppos; // predicted positions
     scalar *m_lambda; // calculated lambdas 
-    scalar *m_dpos; // change in positions
-    scalar *m_vel; 
+    //scalar *m_dpos; // change in positions
+    //scalar *m_vel; 
+
+    Vector3s *m_pos; 
+    Vector3s *m_ppos; 
+    Vector3s *m_dpos; 
+    Vector3s *m_vel; 
 
     scalar m_h; // kernel radius
     int m_iters; // how many iterations through solver?
 
-    scalar *m_accumForce; 
+    //scalar *m_accumForce; 
+    Vector3s *m_accumForce;
 
-    
-    // lambdas?
     FluidBoundingBox m_boundingBox; 
 
     // Colors? 

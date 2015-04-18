@@ -41,6 +41,7 @@ void testBasicSetup(){
     FluidBoundingBox fbox(-1, 4.3, -1.2, 5.4, -1.1, 5.5); 
 
     Fluid fluid(2, 2.0, 1.0, 1.4, 3, 10);
+
     //fluid.setFPMass(2.0);
     //fluid.setRestDensity(1.0);
     fluid.setFPPos(0, Vector3s(1, 2.1, 3));
