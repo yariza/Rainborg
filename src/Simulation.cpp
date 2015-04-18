@@ -22,3 +22,7 @@ Simulation::~Simulation()
     }
 }
 
+void Simulation::display(GLFWViewer *viewer, int width, int height)
+{
+    m_renderer->render(viewer, width, height);
+}

@@ -2,17 +2,22 @@
 #define __SCENE_RENDERER_H__
 
 #include <openglframework.h>
+#include "Scene.h"
+#include "FluidRenderer.h"
 
-class SceneRenderer
+class SceneRenderer : OpenGLRenderer
 {
 public:
-    SceneRenderer();
+    SceneRenderer(Scene* scene);
     ~SceneRenderer();
-    
-    void render();
+
+    virtual void render(GLFWViewer* viewer, int width, int height);
+    void toggleDebugMode();
 
 private:
-
+    Scene* m_scene;
+    std::vector<FluidRenderer*> m_renderers;
+    bool m_debug;
 };
 
 #endif

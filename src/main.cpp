@@ -7,26 +7,22 @@
 #include "FluidSimpleGravityForce.h"
 #include "FluidBoundingBox.h"
 #include "FluidBrick.h"
+#include "Simulation.h"
 #include "MathDefs.h"
+#include <openglframework.h>
 
-static void error_callback(int error, const char* description)
-{
-    fputs(description, stderr);
-}
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-}
+Simulation* g_simulation;
+GLFWViewer* g_viewer;
 
-int foo()
-{
-        glm::vec4 Position = glm::vec4(glm::vec3(0.0), 1.0);
-        glm::mat4 Model = glm::mat4(1.0);
-        Model[3] = glm::vec4(1.0, 1.0, 0.0, 1.0);
-        glm::vec4 Transformed = Model * Position;
-        return 0;
-}
+void simulate();
+void display(int width, int height);
+void reshape(GLFWwindow* window, int width, int height);
+void mouseButton(GLFWwindow* window, int button, int action, int mods);
+void mouseMotion(GLFWwindow* window, double x, double y);
+void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
+void errorCallback(int error, const char* description);
+void init();
+
 
 void testBasicSetup(){
     // I guess.... try initializing a scene? 
@@ -80,70 +76,98 @@ int main(void)
     // Wow this is going to be my terrible, terrible 'test' function thing
 
     testBasicSetup();
+
+    g_viewer = new GLFWViewer();
+    Vector2 windowsSize = Vector2(600, 400);
+    bool initOK = g_viewer->init("OpenGL Framework Demo", windowsSize);
+    if (!initOK) return 1;
+
+    Scene *scene = new Scene();
+
+    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
+    scene->insertFluidForce(sgf);
+
+    FluidBoundingBox *fbox = new FluidBoundingBox(-0, 10, -0, 10, -0, 10);
+
+    Fluid *fluid = new Fluid(1, 2.0, 1.0, 1.4, 3, 10);
+
+    //fluid.setFPMass(2.0);
+    //fluid.setRestDensity(1.0);
+    fluid->setFPPos(0, Vector3s(1.01, 0, 0));
+    fluid->setFPVel(0, Vector3s(-10, 0, 0));
+    //fluid->setFPPos(1, Vector3s(.2, .2, .1));
+    //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
+    fluid->setBoundingBox(*fbox);
+
+    scene->insertFluid(fluid);    
+
+    FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1); 
+    scene->insertFluidBoundary(fbrick); 
+
+    Stepper *stepper = new Stepper();
     
+    // stepper.stepScene(scene, .01);
 
-/*
-    std::cout << foo() << std::endl;
+    SceneRenderer *renderer = new SceneRenderer(scene);
 
-    GLFWwindow* window;
-
-    glfwSetErrorCallback(error_callback);
-
-    // Initialize the library
-    if (!glfwInit())
-        return -1;
-
-    // Create a windowed mode window and its OpenGL context
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
-
-    // Make the window's context current 
-    glfwMakeContextCurrent(window);
-
-    glfwSwapInterval(1);
-    glfwSetKeyCallback(window, key_callback);
-
-    // Loop until the user closes the window 
-    while (!glfwWindowShouldClose(window))
-    {
-        // Render here 
-        float ratio;
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        ratio = width / (float) height;
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
-        glBegin(GL_TRIANGLES);
-            glColor3f(1.f, 0.f, 0.f);
-            glVertex3f(-0.6f, -0.4f, 0.f);
-            glColor3f(0.f, 1.f, 0.f);
-            glVertex3f(0.6f, -0.4f, 0.f);
-            glColor3f(0.f, 0.f, 1.f);
-            glVertex3f(0.f, 0.6f, 0.f);
-        glEnd();
-
-        // Swap front and back buffers 
-        glfwSwapBuffers(window);
-
-        //  Poll for and process events 
-        glfwPollEvents();
-    }
+    g_simulation = new Simulation(scene, stepper, renderer);
 
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
 
-*/
+    g_viewer->bindReshapeCallback(reshape);
+    g_viewer->bindKeyboardCallback(keyboard);
+    g_viewer->bindMouseButtonCallback(mouseButton);
+    g_viewer->bindMouseMotionCallback(mouseMotion);
+    g_viewer->bindDisplayCallback(display);
+    g_viewer->bindIdleCallback(simulate);
+
+    g_viewer->mainLoop();
+
     return 0;
+}
+
+
+// Simulate function
+void simulate() {
+
+    // Display the scene
+    // display();
+}
+
+// Initialization
+void init() {
+
+    // Define the background color (black)
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+}
+
+// Reshape function
+void reshape(GLFWwindow* window, int width, int height) {
+    g_viewer->reshape(width, height);
+}
+
+// Called when a mouse button event occurs
+void mouseButton(GLFWwindow* window, int button, int action, int mods) {
+    g_viewer->mouseButtonEvent(button, action, mods);
+}
+
+// Called when a mouse motion event occurs
+void mouseMotion(GLFWwindow* window, double x, double y) {
+    g_viewer->mouseMotionEvent(x, y);
+}
+
+void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    g_viewer->keyboard(key, scancode, action, mods);
+}
+
+// Display the scene
+void display(int width, int height) {
+
+    g_simulation->display(g_viewer, width, height);
+}
+
+void errorCallback(int error, const char* description)
+{
+    fputs(description, stderr);
 }
 
