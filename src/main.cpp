@@ -6,6 +6,7 @@
 
 #include "FluidSimpleGravityForce.h"
 #include "FluidBoundingBox.h"
+#include "FluidBrick.h"
 #include "MathDefs.h"
 
 static void error_callback(int error, const char* description)
@@ -31,23 +32,23 @@ void testBasicSetup(){
     // I guess.... try initializing a scene? 
 
 
-    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-1.1, .2, .3);
-    FluidSimpleGravityForce* sgff = new FluidSimpleGravityForce(Vector3s(.3, .2, .1));
+    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
+    //FluidSimpleGravityForce* sgff = new FluidSimpleGravityForce(Vector3s(.3, .2, .1));
 
     Scene scene;
     scene.insertFluidForce(sgf);
-    scene.insertFluidForce(sgff);
+    //scene.insertFluidForce(sgff);
 
-    FluidBoundingBox fbox(-1, 4.3, -1.2, 5.4, -1.1, 5.5); 
+    FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10); 
 
-    Fluid *fluid = new Fluid(2, 2.0, 1.0, 1.4, 3, 10);
+    Fluid *fluid = new Fluid(1, 2.0, 1.0, 1.4, 3, 10);
 
     //fluid.setFPMass(2.0);
     //fluid.setRestDensity(1.0);
-    fluid->setFPPos(0, Vector3s(1, 2.1, 3));
-    fluid->setFPVel(0, Vector3s(1.1, .4, .2));
-    fluid->setFPPos(1, Vector3s(3.2, -.2, 1));
-    fluid->setFPVel(1, Vector3s(-.3, .2, .1));
+    fluid->setFPPos(0, Vector3s(1.01, 0, 0));
+    fluid->setFPVel(0, Vector3s(-10, 0, 0));
+    //fluid->setFPPos(1, Vector3s(.2, .2, .1));
+    //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
     fluid->setBoundingBox(fbox);
     
     // printVec3(Vector3s(-0.3, 1, 3));
@@ -55,12 +56,15 @@ void testBasicSetup(){
     std::cout << "adding fluid to scene" << std::endl;
   
     scene.insertFluid(fluid);    
+
+    FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1); 
+    scene.insertFluidBoundary(fbrick); 
     
     Stepper stepper;   
     
     stepper.stepScene(scene, .01);
 
-//    FluidBoundingBox fbox; 
+    //FluidBoundingBox fbox; 
 //    std::cout << fbox.minX() << std::endl;
 
     std::cout << "end test" << std::endl;    

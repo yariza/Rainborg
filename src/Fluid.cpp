@@ -220,19 +220,25 @@ const FluidBoundingBox& Fluid::getBoundingBox() const{
 
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
-
+    std::cout << "pos: " << std::endl;
+    for(int i = 0; i < m_numParticles; ++i){
+        printVec3(m_pos[i]); 
+    }
 
     accumulateForce(scene); // makes more sense 
     // Print force: 
+    std::cout << "forces: " << std::endl;
     for(int i = 0; i < m_numParticles; ++i){
         printVec3(m_accumForce[i]); 
     } 
 
+    std::cout << "vel: " << std::endl;
     updateVelocityFromForce(dt); 
     for(int i = 0; i < m_numParticles; ++i){
         printVec3(m_vel[i]); 
     }
 
+    std::cout << "ppos: " << std::endl;
     updatePredPosition(dt); 
     for(int i = 0; i < m_numParticles; ++i){
         printVec3(m_ppos[i]);
@@ -251,17 +257,35 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
         // Deal with collision detection and response
         dealWithCollisions(scene); 
         preserveOwnBoundary(); 
-    
 
+        std::cout << "in loop: " << loop << std::endl;
+        for(int i = 0; i < m_numParticles; ++i){
+            std::cout << "  dpos:   "; 
+            printVec3(m_dpos[i]); 
+        }
+    
         // Update predicted position with dP
         applydPToPredPos(); 
     }
     
     // Update velocities
     recalculateVelocity(dt); 
-    // Apply vorticity confinement and XSPH viscosity
+    std::cout << "new vel: " << std::endl;
+    updateVelocityFromForce(dt); 
+    for(int i = 0; i < m_numParticles; ++i){
+        printVec3(m_vel[i]); 
+    }
+
+   // Apply vorticity confinement and XSPH viscosity
 
     updateFinalPosition(); 
+    std::cout << "final pos: " << std::endl;
+    updateVelocityFromForce(dt); 
+    for(int i = 0; i < m_numParticles; ++i){
+        printVec3(m_pos[i]); 
+    }
+
+
     
 }
 
@@ -364,8 +388,10 @@ void Fluid::preserveOwnBoundary(){
 }
 
 void Fluid::dealWithCollisions(Scene& scene){
-
-
+    std::vector<FluidBoundary *>bounds = scene.getFluidBoundaries(); 
+    for(int i = 0; i < bounds.size(); ++i){
+        bounds[i]->dealWithCollisions(m_ppos, m_dpos, m_numParticles); 
+    }
 }
 
 void Fluid::recalculateVelocity(scalar dt){

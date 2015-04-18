@@ -96,9 +96,9 @@ void FluidBrick::dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numPartic
     scalar pposY; 
     scalar pposZ; 
     
-    scalar midX = .5 * (minX + maxX); 
-    scalar midY = .5 * (minY + maxY);
-    scalar midZ = .5 * (minZ + maxZ);     
+    scalar midX = .5 * (m_minX + m_maxX); 
+    scalar midY = .5 * (m_minY + m_maxY);
+    scalar midZ = .5 * (m_minZ + m_maxZ);     
 
 
     for(int i = 0; i < numParticles; ++i){
@@ -106,37 +106,37 @@ void FluidBrick::dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numPartic
         pposY = pos[i][1] + dpos[i][1];
         pposZ = pos[i][2] + dpos[i][2]; 
 
-        if(pposX < m_minX - eps)
+        if(pposX < m_minX - m_eps)
             return;
-        if(pposX > m_maxX + eps)
+        if(pposX > m_maxX + m_eps)
             return;
-        if(pposY < m_minY - eps)
+        if(pposY < m_minY - m_eps)
             return;
-        if(pposY > m_minY + eps)
+        if(pposY > m_minY + m_eps)
             return;
-        if(pposZ < m_minZ - eps)
+        if(pposZ < m_minZ - m_eps)
             return;
-        if(pposZ > m_maxZ + eps)
+        if(pposZ > m_maxZ + m_eps)
             return;
 
         // So inside the cube; push to nearest position?
         if(pposX > midX){
-            dpos[i][0] = m_maxX + eps; 
+            dpos[i][0] = m_maxX + m_eps; 
         }
         else{
-            dpos[i][0] = m_minX - eps; 
+            dpos[i][0] = m_minX - m_eps; 
         }
         if(pposY > midY){
-            dpos[i][1] = m_maxY + eps; 
+            dpos[i][1] = m_maxY + m_eps; 
         }
         else{
-            dpos[i][1] = m_minY - eps; 
+            dpos[i][1] = m_minY - m_eps; 
         }
         if(pposZ > midZ){
-            dpos[i][2] = m_maxZ + eps; 
+            dpos[i][2] = m_maxZ + m_eps; 
         }
         else{
-            dpos[i][2] = m_minY - eps; 
+            dpos[i][2] = m_minY - m_eps; 
         }
 
         
