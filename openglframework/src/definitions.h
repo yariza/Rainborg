@@ -32,7 +32,7 @@ namespace openglframework {
 typedef unsigned int uint;
 
 // ------------------- Constants ------------------- //
-const float PI = 3.141592654f;
+const float PIE = 3.141592654f;
 
 typedef unsigned char BYTE;
 }

@@ -58,7 +58,7 @@ void Camera::updateProjectionMatrix() {
     // Compute the aspect ratio
     float aspect = float(mWidth) / float(mHeight);
 
-    float top = mNearPlane * tan((mFieldOfView / 2.0f) * (float(PI) / 180.0f));
+    float top = mNearPlane * tan((mFieldOfView / 2.0f) * (float(PIE) / 180.0f));
     float bottom = -top;
     float left = bottom * aspect;
     float right = top * aspect;
@@ -87,7 +87,7 @@ void Camera::translateCamera(float dx, float dy, const Vector3& worldPoint) {
     // Find the scaling of dx and dy from windows coordinates to near plane coordinates
     // and from there to camera coordinates at the object's depth
     float aspect = float(mWidth) / float(mHeight);
-    float top = mNearPlane * tan(mFieldOfView * PI / 360.0f);
+    float top = mNearPlane * tan(mFieldOfView * PIE / 360.0f);
     float right = top * aspect;
 
     // Translate the camera

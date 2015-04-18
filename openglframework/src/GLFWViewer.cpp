@@ -207,8 +207,8 @@ bool GLFWViewer::mapMouseCoordinatesToSphere(int xMouse, int yMouse, Vector3& sp
     if ((xMouse >= 0) && (xMouse <= width) && (yMouse >= 0) && (yMouse <= height)) {
         float x = float(xMouse - 0.5f * width) / float(width);
         float y = float(0.5f * height - yMouse) / float(height);
-        float sinx = sin(PI * x * 0.5f);
-        float siny = sin(PI * y * 0.5f);
+        float sinx = sin(PIE * x * 0.5f);
+        float siny = sin(PIE * y * 0.5f);
         float sinx2siny2 = sinx * sinx + siny * siny;
 
         // Compute the point on the sphere
