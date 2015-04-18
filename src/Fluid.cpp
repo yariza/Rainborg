@@ -244,8 +244,15 @@ void Fluid::getGridIdx(scalar x, scalar y, scalar z, int& idx){
 }
 
 // Each particle calculates its index in the grid
-// The grid gets its 
+// The grid gets its list of particles... 
+// GPU version presumably with atomic adds? hopefully particles won't try to write to the 
+// same grid at once too often, but when it does, deal with it atomically? 
+// Still sucks for coalescence and things though. 
 void Fluid::buildGrid(){
+    for(int i= 0; i < m_numParticles; ++i){
+        getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
+        std::cout << "particle: " << i << " in grid " << m_gridInd[i] << std::endl;
+    }
 
 
 
