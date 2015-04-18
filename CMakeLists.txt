@@ -26,7 +26,6 @@ endif( OPENGL_FOUND)
 # Find GLFW
 find_package( GLFW REQUIRED )
 if ( GLFW_FOUND )
-    include_directories(${GLFW_INCLUDE_DIR})
     set( pbf_LIBRARIES ${pbf_LIBRARIES} ${GLFW_LIBRARIES})
 else ( GLFW_FOUND )
     message(ERROR " GLFW not found!")
@@ -56,7 +55,9 @@ else( GLM_FOUND )
     message(ERROR " GLM not found")
 endif( GLM_FOUND )
 
+add_subdirectory(openglframework)
+
 add_executable ( testflow ${Headers} ${Templates} ${Sources})
 
-target_link_libraries( testflow ${pbf_LIBRARIES} )
+target_link_libraries( testflow ${pbf_LIBRARIES} openglframework)
 
