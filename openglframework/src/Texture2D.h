@@ -28,6 +28,7 @@
 
 // Libraries
 #include <string>
+#include <stdexcept>
 #include <cassert>
 #include "definitions.h"
 #include <GL/glew.h>
