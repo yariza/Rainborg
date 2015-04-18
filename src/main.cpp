@@ -1,4 +1,3 @@
-#include <GLFW/glfw3.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -50,7 +49,7 @@ void testBasicSetup(){
     fluid.setFPVel(1, Vector3s(-.3, .2, .1));
     fluid.setBoundingBox(fbox);
     
-    
+    // printVec3(Vector3s(-0.3, 1, 3));
 
     std::cout << "adding fluid to scene" << std::endl;
   

@@ -6,4 +6,6 @@
 typedef float scalar;  // so that we can deal with scalar without worrying about the underlying representation
 typedef glm::vec3 Vector3s; 
 
+void printVec3(Vector3s vec);
+
 #endif
