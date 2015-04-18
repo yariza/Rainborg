@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include "Fluid.h"
+#include "FluidBoundary.h"
 #include "FluidForce.h"
 
 //#define VERBOSE true
@@ -16,16 +17,17 @@ public:
     Scene();
     ~Scene();
 
-    void insertFluid(const Fluid& newFluid); 
+    void insertFluid(Fluid* newFluid); 
+    void insertFluidBoundary(FluidBoundary* newBoundary); 
     void insertFluidForce(FluidForce* newFluidForce);
-    std::vector<Fluid>& getFluids();
+    std::vector<Fluid*>& getFluids();
+    std::vector<FluidBoundary*>& getFluidBoundaries(); 
     std::vector<FluidForce*>& getFluidForces();
 
     private: 
-    std::vector<Fluid> m_fluids; 
-    //std::vector<Boundary> boundaries; 
+    std::vector<Fluid*> m_fluids; 
+    std::vector<FluidBoundary*> m_boundaries; 
     std::vector<FluidForce*> m_fluidForces;     
-   
 
 };
 

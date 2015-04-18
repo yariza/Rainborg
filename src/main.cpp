@@ -40,15 +40,15 @@ void testBasicSetup(){
 
     FluidBoundingBox fbox(-1, 4.3, -1.2, 5.4, -1.1, 5.5); 
 
-    Fluid fluid(2, 2.0, 1.0, 1.4, 3, 10);
+    Fluid *fluid = new Fluid(2, 2.0, 1.0, 1.4, 3, 10);
 
     //fluid.setFPMass(2.0);
     //fluid.setRestDensity(1.0);
-    fluid.setFPPos(0, Vector3s(1, 2.1, 3));
-    fluid.setFPVel(0, Vector3s(1.1, .4, .2));
-    fluid.setFPPos(1, Vector3s(3.2, -.2, 1));
-    fluid.setFPVel(1, Vector3s(-.3, .2, .1));
-    fluid.setBoundingBox(fbox);
+    fluid->setFPPos(0, Vector3s(1, 2.1, 3));
+    fluid->setFPVel(0, Vector3s(1.1, .4, .2));
+    fluid->setFPPos(1, Vector3s(3.2, -.2, 1));
+    fluid->setFPVel(1, Vector3s(-.3, .2, .1));
+    fluid->setBoundingBox(fbox);
     
     // printVec3(Vector3s(-0.3, 1, 3));
 
