@@ -13,6 +13,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
     m_numParticles = numParticles;
     m_pos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_ppos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
     m_dpos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_vel = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_accumForce = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
@@ -22,6 +23,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
 
     assert (m_pos != NULL);
     assert(m_ppos != NULL);
+    assert(m_lambda != NULL); 
     assert(m_dpos != NULL);
     assert(m_vel != NULL);
     assert(m_gridInd != NULL);
@@ -40,6 +42,7 @@ Fluid::Fluid(const Fluid& otherFluid){
     // Allocate memory 
     m_pos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     m_ppos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
+    m_lambda = (scalar *)malloc(m_numParticles * sizeof(scalar)); 
     m_dpos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar)); 
     m_vel = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     m_accumForce = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
@@ -48,6 +51,7 @@ Fluid::Fluid(const Fluid& otherFluid){
 
     assert (m_pos != NULL);
     assert(m_ppos != NULL);
+    assert(m_lambda != NULL); 
     assert(m_dpos != NULL);
     assert(m_vel != NULL);
     assert(m_accumForce != NULL);
@@ -79,6 +83,7 @@ Fluid::Fluid(const Fluid& otherFluid){
 Fluid::~Fluid(){
     free(m_pos);
     free(m_ppos);
+    free(m_lambda);
     free(m_dpos);
     free(m_vel);
     free(m_accumForce);
@@ -184,23 +189,28 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     updatePredPosition(dt); 
 
     // find neighbors for each particle 
-    buildGrid();  
-    //
+    buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
-    // loop for solver iterations: 
-        // for all particles calculate lambda
-
-        // for all particles calculate deltaPi
-            // deal with collision detection and response
-
-        // for all particles
-            // update predicted position
+    // loop for solve iterations
+    for(int loop = 0; loop < m_iters; ++loop){
+        // calculate lambda for each particle
+        
+        // Calculate dpos for each particle
     
-    // for all particles: 
-        // update velocity = 1/dt (ppos - pi)
-        // apply vorticity confinement and XSPH viscosity to velocity
-        // update position pos = ppos // just move pointers around jeez
+        // Deal with collision detection and response
+        dealWithCollisions(scene); 
+        preserveOwnBoundary(); 
+    
 
+        // Update predicted position with dP
+        applydPToPredPos(); 
+    }
+    
+    // Update velocities
+    recalculateVelocity(dt); 
+    // Apply vorticity confinement and XSPH viscosity
+
+    updateFinalPosition(); 
     
 }
 
@@ -243,6 +253,18 @@ void Fluid::getGridIdx(scalar x, scalar y, scalar z, int& idx){
 
 }
 
+void Fluid::clearGrid(){
+    memset(m_grid, -1, m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int));
+    memset(m_gridCount, 0,  m_gridX * m_gridY * m_gridZ * sizeof(int)); 
+
+//    std::cout << m_boundingBox.minX() << ": " << m_boundingBox.maxX() << std::endl;
+//    std::cout << m_h << std::endl;
+//    std::cout << m_gridX * m_gridY * m_gridZ << std::endl;
+//    std::cout << m_grid[2] << std::endl;
+//    std::cout << m_gridCount[3] << std::endl;
+}
+
+
 // Each particle calculates its index in the grid
 // The grid gets its list of particles... 
 // GPU version presumably with atomic adds? hopefully particles won't try to write to the 
@@ -251,15 +273,27 @@ void Fluid::getGridIdx(scalar x, scalar y, scalar z, int& idx){
 void Fluid::buildGrid(){
     for(int i= 0; i < m_numParticles; ++i){
         getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
-        std::cout << "particle: " << i << " in grid " << m_gridInd[i] << std::endl;
     }
 
+    // zero things out
+    clearGrid(); 
 
-
+    // Build list of grid particles
+    int gind; 
+    for(int i = 0; i < m_numParticles; ++i){
+        gind = m_gridInd[i];
+        m_grid[gind * m_maxNeighbors + m_gridCount[gind]] = i; 
+        m_gridCount[gind] ++; 
+    }
 }
 
 void Fluid::preserveOwnBoundary(){
     m_boundingBox.dealWithCollisions(m_ppos, m_dpos, m_numParticles);
+}
+
+void Fluid::dealWithCollisions(Scene& scene){
+
+
 }
 
 void Fluid::recalculateVelocity(scalar dt){
@@ -274,5 +308,9 @@ void Fluid::updateFinalPosition(){
     m_ppos = temp; // recalculate predicted positions anyway
 }
 
-
+void Fluid::applydPToPredPos(){
+    for(int i = 0; i < m_numParticles * 3; ++i){
+        m_ppos[i] += m_dpos[i]; 
+    }
+}
 

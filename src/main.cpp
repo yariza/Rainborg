@@ -38,7 +38,7 @@ void testBasicSetup(){
     scene.insertFluidForce(sgf);
     scene.insertFluidForce(sgff);
 
-    FluidBoundingBox fbox(.1, .3, .2, .4, .1, .5); 
+    FluidBoundingBox fbox(-1, 4.3, -1.2, 5.4, -1.1, 5.5); 
 
     Fluid fluid(2, 2.0, 1.0, 1.4, 3, 10);
     //fluid.setFPMass(2.0);
@@ -57,14 +57,10 @@ void testBasicSetup(){
     
     Stepper stepper;   
     
-    stepper.stepScene(scene, .1);
+    stepper.stepScene(scene, .01);
 
 //    FluidBoundingBox fbox; 
 //    std::cout << fbox.minX() << std::endl;
-
-    for(int i = 0; i < scene.getFluids().size(); ++i){
-        std::cout << "box: " << scene.getFluids()[i].getBoundingBox().minX() << std::endl;
-    }
 
     std::cout << "end test" << std::endl;    
 

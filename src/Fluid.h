@@ -42,13 +42,14 @@ private:
     void accumulateForce(Scene& scene);     
     void updateVelocityFromForce(scalar dt); 
     void updatePredPosition(scalar dt); 
+    void clearGrid();
     void buildGrid(); // how to parallelize? 
     void getGridIdx(scalar x, scalar y, scalar z, int& idx); // make separate in case of smarter coallesced memory access    
  
-    //void findNeighbors(); 
-    //void dealWithCollisions(Scene& scene); // ... Deal with scene collisions
+    void dealWithCollisions(Scene& scene); // ... Deal with scene collisions
     void preserveOwnBoundary(); // Make sure within own bounding box
 
+    void applydPToPredPos(); 
     void recalculateVelocity(scalar dt); 
     // Vorticity confinement, XSPH
     void updateFinalPosition();     
@@ -68,6 +69,7 @@ private:
     scalar m_p0; // rest density
     scalar *m_pos; // actual positinos
     scalar *m_ppos; // predicted positions
+    scalar *m_lambda; // calculated lambdas 
     scalar *m_dpos; // change in positions
     scalar *m_vel; 
 
