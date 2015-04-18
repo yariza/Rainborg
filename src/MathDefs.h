@@ -14,6 +14,7 @@ void printVec3(Vector3s vec);
 
 scalar wPoly6Kernel(Vector3s &pi, Vector3s &pj, scalar h); 
 scalar wSpikyKernel(Vector3s &pi, Vector3s &pj, scalar h); 
+scalar wViscosityKernel(Vector3s &pi, Vector3s &pj, scalar h); 
 Vector3s wPoly6KernelGrad(Vector3s &pi, Vector3s &pj, scalar h);
 Vector3s wSpikyKernelGrad(Vector3s &pi, Vector3s &pj, scalar h); 
 
