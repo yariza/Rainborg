@@ -350,6 +350,7 @@ Vector3s Fluid::calcGradConstraintAtI(int p){
         }
     }       
     
+        
     return sumGrad / m_p0; 
 
 }
