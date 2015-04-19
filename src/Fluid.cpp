@@ -325,6 +325,8 @@ void Fluid::calculatePressures(){
         }        
         if(ncount <= m_minNeighbors) // don't count self
             m_pcalc[p] = m_p0; 
+        else
+            m_pcalc[p] = m_fpmass * press;  
     }
 }
 
