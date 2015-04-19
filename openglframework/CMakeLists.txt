@@ -45,11 +45,8 @@ else()
    MESSAGE("LIBJPEG not found")
 endif()
 
-# Freeglut
-add_subdirectory(freeglut)
-
 # Headers
-INCLUDE_DIRECTORIES(src freeglut ${JPEG_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(src ${JPEG_INCLUDE_DIR})
 
 # Library configuration
 file (
@@ -67,7 +64,7 @@ ADD_LIBRARY (
 )
 
 TARGET_INCLUDE_DIRECTORIES(openglframework PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
-TARGET_LINK_LIBRARIES(openglframework ${GLEW_LIBRARIES} ${OPENGL_LIBRARY} ${GLFW_LIBRARIES} ${X11_LIBRARIES} ${EXTRA_LIBS} freeglut_static)
+TARGET_LINK_LIBRARIES(openglframework ${GLEW_LIBRARIES} ${OPENGL_LIBRARY} ${GLFW_LIBRARIES} ${X11_LIBRARIES} ${EXTRA_LIBS})
 
 # If we need to compile the examples
 IF (COMPILE_DEMO)

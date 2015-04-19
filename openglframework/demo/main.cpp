@@ -65,15 +65,7 @@ int main(int argc, char** argv) {
     viewer->bindKeyboardCallback(keyboard);
     viewer->bindMouseButtonCallback(mouseButton);
     viewer->bindMouseMotionCallback(mouseMotion);
-    // Glut Idle function that is continuously called
-    // glutIdleFunc(simulate);
-    // glutDisplayFunc(display);
-    // glutReshapeFunc(reshape);
-    // glutMouseFunc(mouseButton);
-    // glutMotionFunc(mouseMotion);
 
-    // // Glut main looop
-    // glutMainLoop();
     viewer->mainLoop();
 
     delete viewer;

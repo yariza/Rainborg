@@ -66,9 +66,6 @@ void Scene::display() {
 
     // Render the mesh
     renderMesh();
-
-    // Display a cube
-    //glutSolidCube(5.0);
 }
 
 // Render the mesh
