@@ -50,11 +50,10 @@ endif( GLM_FOUND )
 add_subdirectory(openglframework)
 include_directories(${CMAKE_SOURCE_DIR}/include/openglframework)
 
-# copy shaders
-FILE(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/shaders/")
-
 add_executable ( testflow ${Headers} ${Templates} ${Sources})
 
+# copy shaders
+copy_files(testflow "src/shaders/*" ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
 target_link_libraries( testflow ${EXTRA_LIBS} ${pbf_LIBRARIES} openglframework )
 
