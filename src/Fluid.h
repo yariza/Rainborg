@@ -14,7 +14,7 @@ class Fluid{
 
 public:
 
-    Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeigh);
+    Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeigh = 20, int minNeighbor = 3);
     Fluid(const Fluid& otherFluid);
     ~Fluid();
 
@@ -31,6 +31,7 @@ public:
     int getNumParticles() const;
     int getNumIterations() const;
     int getMaxNeighbors() const;
+    int getMinNeighbors() const; 
     scalar getFPMass() const;
     scalar getRestDensity() const;
     scalar getKernelH() const;
@@ -67,6 +68,7 @@ private:
     
     int m_numParticles;
     int m_maxNeighbors; 
+    int m_minNeighbors; // minimum number of neighbors to do calculations
 
     int *m_grid; // grid of particles, x, then y, then z, size w*h*d*maxNeighbors
     int *m_gridCount; // store number of particles in grid so far (needed for GPU)

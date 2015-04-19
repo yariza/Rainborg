@@ -1,12 +1,13 @@
 #include "Fluid.h"
 #include "Scene.h"
 
-Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeighbors) 
+Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors)
 : m_fpmass(mass)
 , m_p0(p0)
 , m_h(h)
 , m_iters(iters)
 , m_maxNeighbors(maxNeighbors)
+, m_minNeighbors(minNeighbors)
 {
     // Allocate memory for m_pos, m_ppos, m_vel, m_accumForce? 
 
@@ -49,6 +50,7 @@ Fluid::Fluid(const Fluid& otherFluid){
     m_h = otherFluid.getKernelH(); 
     m_iters = otherFluid.getNumIterations(); 
     m_maxNeighbors = otherFluid.getMaxNeighbors();
+    m_minNeighbors = otherFluid.getMinNeighbors(); 
 
     // Allocate memory 
     //m_pos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
@@ -178,6 +180,10 @@ int Fluid::getMaxNeighbors() const{
     return m_maxNeighbors;
 }
 
+int Fluid::getMinNeighbors() const{
+    return m_minNeighbors;
+}
+
 int Fluid::getNumParticles() const{
     return m_numParticles;
 }
@@ -296,8 +302,11 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 }
 
 // Wow this is the ugliest loop something is sure to be wrong somewhere
+// If not enough neighbors? Chosen behaviour: don't change the pressure from last time
 void Fluid::calculatePressures(){
     int gi = 0; // current grid id
+    scalar press; 
+    int ncount; // number of neighbors
     for(int p = 0; p < m_numParticles; ++p){
         // grab neighbors?  
         for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
@@ -305,13 +314,14 @@ void Fluid::calculatePressures(){
                 for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
                     gi = getGridIdx(i, j, k); 
                     for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
-                        m_pcalc[p] += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n], m_h); 
+                        press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n], m_h); 
+                        ++ ncount; 
                     }            
                 }
             }
         }        
-
-        m_pcalc[p] *= m_fpmass; 
+        if(ncount >= m_minNeighbors)
+            m_pcalc[p] = m_fpmass * press;  
     }
 }
 
