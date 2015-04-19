@@ -8,6 +8,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
 , m_iters(iters)
 , m_maxNeighbors(maxNeighbors)
 , m_minNeighbors(minNeighbors)
+, m_eps(.01) // wow this is terrible
 {
     // Allocate memory for m_pos, m_ppos, m_vel, m_accumForce? 
 
@@ -43,7 +44,9 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
 }
 
 
-Fluid::Fluid(const Fluid& otherFluid){
+Fluid::Fluid(const Fluid& otherFluid)
+: m_eps(.01)
+{
     m_numParticles = otherFluid.getNumParticles();
     m_fpmass = otherFluid.getFPMass();
     m_p0 = otherFluid.getRestDensity();
@@ -302,7 +305,7 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 }
 
 // Wow this is the ugliest loop something is sure to be wrong somewhere
-// If not enough neighbors? Chosen behaviour: don't change the pressure from last time
+// If not enough neighbors? Chosen behaviour: set pressure to rest; don't act on constraints
 void Fluid::calculatePressures(){
     int gi = 0; // current grid id
     scalar press; 
@@ -320,9 +323,21 @@ void Fluid::calculatePressures(){
                 }
             }
         }        
-        if(ncount >= m_minNeighbors)
-            m_pcalc[p] = m_fpmass * press;  
+        if(ncount <= m_minNeighbors) // don't count self
+            m_pcalc[p] = m_p0; 
     }
+}
+
+Vector3s Fluid::calcGradConstraint(Vector3s& pi, Vector3s& pj){
+    return wSpikyKernelGrad(pi, pj, m_h) / (- m_p0); 
+}
+
+Vector3s Fluid::calcGradConstraintAtI(){
+    // Bah
+    Vector3s sumGrad(0.0, 0.0, 0.0); 
+    
+    return sumGrad / m_p0; 
+
 }
 
 void Fluid::calculateLambdas(){

@@ -60,6 +60,9 @@ private:
     void dealWithCollisions(Scene& scene); // ... Deal with scene collisions
     void preserveOwnBoundary(); // Make sure within own bounding box
 
+    Vector3s calcGradConstraint(Vector3s& pi, Vector3s& pj);
+    Vector3s calcGradConstraintAtI();  
+
     void applydPToPredPos(); 
     void recalculateVelocity(scalar dt); 
     // Vorticity confinement, XSPH
@@ -91,6 +94,7 @@ private:
     Vector3s *m_dpos; 
     Vector3s *m_vel; 
 
+    scalar m_eps; 
     scalar m_h; // kernel radius
     int m_iters; // how many iterations through solver?
 
