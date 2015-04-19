@@ -236,32 +236,33 @@ const FluidBoundingBox& Fluid::getBoundingBox() const{
 void Fluid::stepSystem(Scene& scene, scalar dt){
     std::cout << "pos: " << std::endl;
     for(int i = 0; i < m_numParticles; ++i){
-        printVec3(m_pos[i]); 
+        //printVec3(m_pos[i]); 
     }
 
     accumulateForce(scene); // makes more sense 
     // Print force: 
     std::cout << "forces: " << std::endl;
     for(int i = 0; i < m_numParticles; ++i){
-        printVec3(m_accumForce[i]); 
+        //printVec3(m_accumForce[i]); 
     } 
 
     std::cout << "vel: " << std::endl;
     updateVelocityFromForce(dt); 
     for(int i = 0; i < m_numParticles; ++i){
-        printVec3(m_vel[i]); 
+        //printVec3(m_vel[i]); 
     }
 
     std::cout << "ppos: " << std::endl;
     updatePredPosition(dt); 
     for(int i = 0; i < m_numParticles; ++i){
-        printVec3(m_ppos[i]);
+        //printVec3(m_ppos[i]);
     }
 
     // find neighbors for each particle 
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
     // loop for solve iterations
+    m_iters = 1; // don't do things
     for(int loop = 0; loop < m_iters; ++loop){
         // calculate lambda for each particle
         calculatePressures(); 
@@ -275,8 +276,8 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 
         std::cout << "in loop: " << loop << std::endl;
         for(int i = 0; i < m_numParticles; ++i){
-            std::cout << "  dpos:   "; 
-            printVec3(m_dpos[i]); 
+            //std::cout << "  dpos:   "; 
+            //printVec3(m_dpos[i]); 
         }
 
         // Update predicted position with dP
@@ -285,10 +286,10 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 
     // Update velocities
     recalculateVelocity(dt); 
-    std::cout << "new vel: " << std::endl;
+    //std::cout << "new vel: " << std::endl;
     updateVelocityFromForce(dt); 
     for(int i = 0; i < m_numParticles; ++i){
-        printVec3(m_vel[i]); 
+        //printVec3(m_vel[i]); 
     }
 
     // Apply vorticity confinement and XSPH viscosity
@@ -312,6 +313,7 @@ void Fluid::calculatePressures(){
     int ncount; // number of neighbors
     for(int p = 0; p < m_numParticles; ++p){
         // grab neighbors?  
+        ncount = 0; 
         for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
             for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
                 for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
@@ -326,8 +328,8 @@ void Fluid::calculatePressures(){
         if(ncount <= m_minNeighbors) // don't count self
             m_pcalc[p] = m_p0; 
         else
-            m_pcalc[p] = m_fpmass * press;  
             m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
+        std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
     }
 }
 
@@ -484,7 +486,12 @@ void Fluid::buildGrid(){
     for(int i= 0; i < m_numParticles; ++i){
         //getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
         getGridIdx(m_ppos[i], m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
+        //std::cout << "particle " << i << " pos: "; 
+        //printVec3(m_ppos[i]); 
+        //std::cout << "  grid: " << m_gridInd[i*3] << ", " << m_gridInd[i*3+1] << ", " << m_gridInd[i*3+2] << std::endl;
+        //std::cin.get(); 
     }
+
 
     // zero things out
     clearGrid(); 
