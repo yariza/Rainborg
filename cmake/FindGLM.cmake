@@ -32,7 +32,11 @@
 # default search dirs
 SET(_glm_HEADER_SEARCH_DIRS
     "/usr/include"
-    "/usr/local/include")
+    "/usr/local/include"
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_INSTALL_PREFIX}/include
+    ~/include
+    )
 
 # check environment variable
 SET(_glm_ENV_ROOT_DIR "$ENV{GLM_ROOT_DIR}")

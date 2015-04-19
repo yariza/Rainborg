@@ -23,14 +23,6 @@ else ( OPENGL_FOUND )
     message(ERROR " OPENGL not found!")
 endif( OPENGL_FOUND)
 
-# Find GLFW
-find_package( GLFW REQUIRED )
-if ( GLFW_FOUND )
-    set( pbf_LIBRARIES ${pbf_LIBRARIES} ${GLFW_LIBRARIES})
-else ( GLFW_FOUND )
-    message(ERROR " GLFW not found!")
-endif( GLFW_FOUND )
-
 # TCLAP library is required
 find_package (TCLAP REQUIRED)
 if (TCLAP_FOUND)
@@ -63,5 +55,6 @@ FILE(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/" DESTINATION "${CMAKE_CURREN
 
 add_executable ( testflow ${Headers} ${Templates} ${Sources})
 
-target_link_libraries( testflow ${pbf_LIBRARIES} openglframework)
+
+target_link_libraries( testflow ${EXTRA_LIBS} ${pbf_LIBRARIES} openglframework )
 

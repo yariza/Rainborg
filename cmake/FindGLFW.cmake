@@ -48,6 +48,7 @@ find_path( GLFW_INCLUDE_DIR
         /usr/local/include
         /usr/include/GL
         /usr/include
+        ~/include
     DOC 
         "The directory where GL/glfw.h resides"
 )
@@ -145,6 +146,7 @@ else ()
                 /usr/local/lib/${CMAKE_LIBRARY_ARCHITECTURE}
                 /usr/openwin/lib
                 /usr/X11R6/lib
+                ~/lib
             DOC 
                 "The GLFW library"
         )

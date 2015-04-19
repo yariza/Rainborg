@@ -63,6 +63,10 @@ bool Shader::create(const std::string vertexShaderFilename,
     bool isExtensionOK = checkOpenGLExtensions();
     if (!isExtensionOK) {
        cerr << "Error : Impossible to use GLSL vertex or fragment shaders on this platform" << endl;
+       cerr << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
+       cerr << "GLEW version = 2.0: " << (GLEW_VERSION_2_0!=0) << std::endl;
+       cerr << "ARB Vertex shader: " << (GLEW_ARB_vertex_shader!=0) << std::endl;
+       cerr << "ARB Fragment shader: " << (GLEW_ARB_fragment_shader!=0) << std::endl;
        assert(false);
        return false;
     }
