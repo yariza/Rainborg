@@ -30,11 +30,6 @@ void SceneRenderer::toggleDebugMode() {
 
 void SceneRenderer::render(GLFWViewer* viewer, int width, int height) {
 
-    float radius = 10.0f;
-    Vector3 center(0.0, 0.0, 0.0);
-
-    viewer->setScenePosition(center, radius);
-
     for (std::vector<FluidRenderer*>::size_type i=0; i<m_renderers.size(); i++) {
         m_renderers[i]->render(viewer, width, height);
     }

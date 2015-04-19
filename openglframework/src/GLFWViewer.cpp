@@ -54,6 +54,11 @@ bool GLFWViewer::initGLFW(const string& windowsTitle,
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);
 
+    float radius = 10.0f;
+    Vector3 center(0.0, 0.0, 0.0);
+
+    setScenePosition(center, radius);
+
     return true;
 }
 
