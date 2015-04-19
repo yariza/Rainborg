@@ -28,10 +28,11 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
     m_shader.setMatrix4x4Uniform("worldToCameraMatrix", camera.getTransformMatrix().getInverse());
     m_shader.setMatrix4x4Uniform("projectionMatrix", camera.getProjectionMatrix());
 
-    glPointSize(2.0);
+    glPointSize(5.0);
 
     Vector3s* posArray = m_fluid->getFPPos();
 
+    glEnable(GL_POINT_SMOOTH);
     glBegin(GL_POINTS);
         for (int i=0; i<m_fluid->getNumParticles(); i++) {
             glVertex3f(posArray[i].x, posArray[i].y, posArray[i].z);
