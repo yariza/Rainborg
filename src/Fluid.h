@@ -61,7 +61,7 @@ private:
     void preserveOwnBoundary(); // Make sure within own bounding box
 
     Vector3s calcGradConstraint(Vector3s& pi, Vector3s& pj);
-    Vector3s calcGradConstraintAtI();  
+    Vector3s calcGradConstraintAtI(int p);  
 
     void applydPToPredPos(); 
     void recalculateVelocity(scalar dt); 
