@@ -49,8 +49,10 @@ private:
     void clearGrid();
     void buildGrid(); // how to parallelize? 
 //    void getGridIdx(scalar x, scalar y, scalar z, int& idx); // make separate in case of smarter coallesced memory access    
-    void getGridIdx(Vector3s &pos, int& idx);  
+    void getGridIdx(Vector3s &pos, int& idx, int& idy, int &idz);  
+    int getGridIdx(int i, int j, int k); 
 
+    void calculatePressures(); 
     void calculateLambdas(); 
     void calculatedPos(); 
   
@@ -74,7 +76,8 @@ private:
     int m_gridZ; 
 
     scalar m_fpmass; // float particle mass, shared by all
-    scalar m_p0; // rest density
+    scalar m_p0; // rest pressure
+    scalar *m_pcalc; // calculated pressure
     //scalar *m_pos; // actual positinos
     //scalar *m_ppos; // predicted positions
     scalar *m_lambda; // calculated lambdas 

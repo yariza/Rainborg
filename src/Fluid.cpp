@@ -14,6 +14,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
     //m_pos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     //m_ppos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
+    m_pcalc = (scalar *)malloc(numParticles * sizeof(scalar)); 
     //m_dpos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     //m_vel = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     //m_accumForce = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
@@ -25,13 +26,14 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
     m_accumForce = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
     m_colors = (Vector4s *)malloc(numParticles * sizeof(Vector4s)); 
 
-    m_gridInd = (int *)malloc(numParticles * sizeof(int));
+    m_gridInd = (int *)malloc(numParticles * 3 * sizeof(int));
     m_grid = NULL; // don't know bounding box yet
     m_gridCount = NULL;
 
     assert (m_pos != NULL);
     assert(m_ppos != NULL);
     assert(m_lambda != NULL); 
+    assert(m_pcalc != NULL); 
     assert(m_dpos != NULL);
     assert(m_vel != NULL);
     assert(m_gridInd != NULL);
@@ -51,12 +53,13 @@ Fluid::Fluid(const Fluid& otherFluid){
     // Allocate memory 
     //m_pos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     //m_ppos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    m_lambda = (scalar *)malloc(m_numParticles * sizeof(scalar)); 
+    m_lambda = (scalar *)malloc(m_numParticles * sizeof(scalar));
+    m_pcalc = (scalar *)malloc(m_numParticles * sizeof(scalar)); 
     //m_dpos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar)); 
     //m_vel = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     //m_accumForce = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    m_gridInd = (int *)malloc(m_numParticles * sizeof(int));
- 
+    m_gridInd = (int *)malloc(m_numParticles * 3 * sizeof(int));
+
     m_pos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
     m_ppos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
     m_dpos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
@@ -66,6 +69,7 @@ Fluid::Fluid(const Fluid& otherFluid){
 
     assert (m_pos != NULL);
     assert(m_ppos != NULL);
+    assert(m_pcalc != NULL); 
     assert(m_lambda != NULL); 
     assert(m_dpos != NULL);
     assert(m_vel != NULL);
@@ -91,7 +95,7 @@ Fluid::Fluid(const Fluid& otherFluid){
 
     m_grid = (int *)malloc(m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int)); 
     m_gridCount = (int *)malloc(m_gridX * m_gridY * m_gridZ * sizeof(int)); 
-   
+
     assert(m_grid != NULL);
     assert(m_gridCount != NULL);
 }
@@ -100,6 +104,7 @@ Fluid::~Fluid(){
     free(m_pos);
     free(m_ppos);
     free(m_lambda);
+    free(m_pcalc); 
     free(m_dpos);
     free(m_vel);
     free(m_accumForce);
@@ -122,21 +127,21 @@ void Fluid::setRestDensity(scalar p0){
 
 void Fluid::setFPPos(int fp, const Vector3s& pos){
     assert(fp >= 0 && fp < m_numParticles);
-    
+
     m_pos[fp] = pos; 
-    
-//    m_pos[fp*3] = pos[0];
-//    m_pos[fp*3+1] = pos[1];
-//    m_pos[fp*3+2] = pos[2];
+
+    //    m_pos[fp*3] = pos[0];
+    //    m_pos[fp*3+1] = pos[1];
+    //    m_pos[fp*3+2] = pos[2];
 }
 
 void Fluid::setFPVel(int fp, const Vector3s& vel){
     assert(fp >= 0 && fp < m_numParticles);
     m_vel[fp] = vel;  
-  
-//    m_vel[fp*3] = vel[0];
-//    m_vel[fp*3+1] = vel[1];
-//    m_vel[fp*3+2] = vel[2];
+
+    //    m_vel[fp*3] = vel[0];
+    //    m_vel[fp*3+1] = vel[1];
+    //    m_vel[fp*3+2] = vel[2];
 }
 
 void Fluid::setKernelH(scalar h){
@@ -184,7 +189,7 @@ scalar Fluid::getFPMass() const{
 scalar Fluid::getRestDensity() const{
     return m_p0;
 }
- 
+
 scalar Fluid::getKernelH() const{
     return m_h;
 }
@@ -250,6 +255,7 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     // loop for solve iterations
     for(int loop = 0; loop < m_iters; ++loop){
         // calculate lambda for each particle
+        calculatePressures(); 
         calculateLambdas();  
         // Calculate dpos for each particle
         calculatedPos(); 
@@ -263,11 +269,11 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
             std::cout << "  dpos:   "; 
             printVec3(m_dpos[i]); 
         }
-    
+
         // Update predicted position with dP
         applydPToPredPos(); 
     }
-    
+
     // Update velocities
     recalculateVelocity(dt); 
     std::cout << "new vel: " << std::endl;
@@ -276,7 +282,7 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
         printVec3(m_vel[i]); 
     }
 
-   // Apply vorticity confinement and XSPH viscosity
+    // Apply vorticity confinement and XSPH viscosity
 
     updateFinalPosition(); 
     std::cout << "final pos: " << std::endl;
@@ -286,7 +292,27 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     }
 
 
-    
+    std::cout << "end step system" << std::endl;
+}
+
+// Wow this is the ugliest loop something is sure to be wrong somewhere
+void Fluid::calculatePressures(){
+    int gi = 0; // current grid id
+    for(int p = 0; p < m_numParticles; ++p){
+        // grab neighbors?  
+        for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
+            for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
+                for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
+                    gi = getGridIdx(i, j, k); 
+                    for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
+                        m_pcalc[p] += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n], m_h); 
+                    }            
+                }
+            }
+        }        
+
+        m_pcalc[p] *= m_fpmass; 
+    }
 }
 
 void Fluid::calculateLambdas(){
@@ -308,7 +334,7 @@ void Fluid::accumulateForce(Scene& scene){
     for(int i = 0; i < fluidForces.size(); ++i){
         fluidForces[i]->addGradEToTotal(m_pos, m_vel, m_fpmass, m_accumForce, m_numParticles);
     }
-    
+
     // F *= -1.0/mass
     for(int i = 0; i < m_numParticles; ++i){
         m_accumForce[i] /= -m_fpmass; 
@@ -330,13 +356,17 @@ void Fluid::updatePredPosition(scalar dt){
     }
 }
 
-void Fluid::getGridIdx(Vector3s &pos, int &idx){
+void Fluid::getGridIdx(Vector3s &pos, int &idx, int &idy, int &idz){
     // in our case...
-    int i = (pos[0] - m_boundingBox.minX())/m_h; 
-    int j = (pos[1] - m_boundingBox.minY())/m_h;
-    int k = (pos[2] - m_boundingBox.minZ())/m_h; 
+    idx = (pos[0] - m_boundingBox.minX())/m_h; 
+    idy = (pos[1] - m_boundingBox.minY())/m_h;
+    idz = (pos[2] - m_boundingBox.minZ())/m_h; 
 
-    idx = (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
+    //idx = (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
+}
+
+int Fluid::getGridIdx(int i, int j, int k){
+    return (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
 }
 
 //void Fluid::getGridIdx(scalar x, scalar y, scalar z, int& idx){
@@ -352,11 +382,11 @@ void Fluid::clearGrid(){
     memset(m_grid, -1, m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int));
     memset(m_gridCount, 0,  m_gridX * m_gridY * m_gridZ * sizeof(int)); 
 
-//    std::cout << m_boundingBox.minX() << ": " << m_boundingBox.maxX() << std::endl;
-//    std::cout << m_h << std::endl;
-//    std::cout << m_gridX * m_gridY * m_gridZ << std::endl;
-//    std::cout << m_grid[2] << std::endl;
-//    std::cout << m_gridCount[3] << std::endl;
+    //    std::cout << m_boundingBox.minX() << ": " << m_boundingBox.maxX() << std::endl;
+    //    std::cout << m_h << std::endl;
+    //    std::cout << m_gridX * m_gridY * m_gridZ << std::endl;
+    //    std::cout << m_grid[2] << std::endl;
+    //    std::cout << m_gridCount[3] << std::endl;
 }
 
 
@@ -368,7 +398,7 @@ void Fluid::clearGrid(){
 void Fluid::buildGrid(){
     for(int i= 0; i < m_numParticles; ++i){
         //getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
-        getGridIdx(m_ppos[i], m_gridInd[i]); 
+        getGridIdx(m_ppos[i], m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
     }
 
     // zero things out
@@ -377,7 +407,8 @@ void Fluid::buildGrid(){
     // Build list of grid particles
     int gind; 
     for(int i = 0; i < m_numParticles; ++i){
-        gind = m_gridInd[i];
+        gind = getGridIdx(m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
+        //gind = m_gridInd[i];
         m_grid[gind * m_maxNeighbors + m_gridCount[gind]] = i; 
         m_gridCount[gind] ++; 
     }
