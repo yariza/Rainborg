@@ -332,10 +332,22 @@ Vector3s Fluid::calcGradConstraint(Vector3s& pi, Vector3s& pj){
     return wSpikyKernelGrad(pi, pj, m_h) / (- m_p0); 
 }
 
-Vector3s Fluid::calcGradConstraintAtI(){
+Vector3s Fluid::calcGradConstraintAtI(int p){
     // Bah
     Vector3s sumGrad(0.0, 0.0, 0.0); 
-    
+    // For neighbors, sum wSpikyKernelGrad(pi, pj, m_h)
+    int gi; 
+    for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
+        for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
+            for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
+                gi = getGridIdx(i, j, k); // current grid
+                for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
+                    sumGrad += wSpikyKernelGrad(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n], m_h);
+                }            
+            }
+        }
+    }        
+        
     return sumGrad / m_p0; 
 
 }
@@ -343,11 +355,55 @@ Vector3s Fluid::calcGradConstraintAtI(){
 void Fluid::calculateLambdas(){
     memset(m_lambda, 0, m_numParticles * sizeof(scalar)); 
 
+    scalar top = 0; 
+    scalar gradSum; 
+    scalar gradL; 
+    int gi; 
+    for(int p = 0; p < m_numParticles; ++p){
+        top = -(m_pcalc[p]/m_p0 - 1.0); 
+        // for all neighbors, calculate Constraint gradient at p 
+        for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
+            for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
+                for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
+                    gi = getGridIdx(i, j, k); // current grid
+                    for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
+                        gradL =  glm::length(calcGradConstraint(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n]));  
+                        gradSum += gradL * gradL;
+                    }            
+                }
+            }
+        }        
+        
+        // add self-gradient 
+        gradL = glm::length(calcGradConstraintAtI(p)); 
+        gradSum += gradL * gradL; 
+        m_lambda[p] = top / (gradSum + m_eps); 
+    }
 }
 
 void Fluid::calculatedPos(){
     memset(m_dpos, 0, m_numParticles * sizeof(Vector3s)); 
+    for(int p = 0; p < m_numParticles; ++p){
+        Vector3s dp(0.0, 0.0, 0.0); 
 
+        int q = 0;
+        int gi = 0; 
+        scalar scorr = 0; // actually calculate
+        // for all neighbors, calculate Constraint gradient at p 
+        for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
+            for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
+                for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
+                    gi = getGridIdx(i, j, k); // current grid
+                    for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
+                        q = m_grid[gi] * m_maxNeighbors + n; 
+                        dp += (m_lambda[p] + m_lambda[q] + scorr)*wSpikyKernelGrad(m_ppos[p], m_ppos[q], m_h);            
+
+                    }            
+                }
+            }
+        }        
+        m_dpos[p] = dp / m_p0;    
+    }
 }
 
 
