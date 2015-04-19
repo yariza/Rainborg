@@ -327,6 +327,7 @@ void Fluid::calculatePressures(){
             m_pcalc[p] = m_p0; 
         else
             m_pcalc[p] = m_fpmass * press;  
+            m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
     }
 }
 
