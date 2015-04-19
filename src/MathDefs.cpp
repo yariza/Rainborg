@@ -38,7 +38,15 @@ scalar wViscosityKernel(Vector3s &pi, Vector3s &pj, scalar h){
 
 
 Vector3s wPoly6KernelGrad(Vector3s &pi, Vector3s &pj, scalar h){
+    Vector3s dp = pi - pj; 
+    scalar r = glm::length(dp);  
+    if(r > h || r < 0)
+        return Vector3s(0.0, 0.0, 0.0); 
 
+    scalar scale = (h * h - r * r); 
+    scale = scale * scale;  
+    scale = (-945.0 / (32.0 * PI * h * h * h * h * h * h * h * h * h)); 
+    return scale * dp; 
 }
 
 Vector3s wSpikyKernelGrad(Vector3s &pi, Vector3s &pj, scalar h){
