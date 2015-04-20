@@ -22,6 +22,11 @@ Simulation::~Simulation()
     }
 }
 
+void Simulation::stepSystem(const scalar& dt) {
+
+    m_stepper->stepScene(*m_scene, dt);
+}
+
 void Simulation::display(openglframework::GLFWViewer *viewer, int width, int height)
 {
     m_renderer->render(viewer, width, height);

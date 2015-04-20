@@ -11,6 +11,9 @@ public:
     Simulation(Scene* scene, Stepper* stepper, SceneRenderer* renderer);
     ~Simulation();
 
+    void stepSystem(const scalar& dt);
+
+    // display functions
     void display(openglframework::GLFWViewer *viewer, int width, int height);
 
 private:
