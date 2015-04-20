@@ -8,7 +8,7 @@
 class FluidBoundingBox : public FluidBoundary {
 public: 
     FluidBoundingBox();
-    FluidBoundingBox(scalar minX, scalar maxX, scalar minY, scalar maxY, scalar minZ, scalar maxZ, scalar eps = .01);
+    FluidBoundingBox(scalar minX, scalar maxX, scalar minY, scalar maxY, scalar minZ, scalar maxZ, scalar eps = .1);
     FluidBoundingBox(const FluidBoundingBox& otherBound); 
     FluidBoundingBox& operator=(const FluidBoundingBox& otherBound);
 

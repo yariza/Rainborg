@@ -234,55 +234,71 @@ const FluidBoundingBox& Fluid::getBoundingBox() const{
 
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
-    std::cout << "pos: " << std::endl;
+    //std::cout << "pos: " << std::endl;
     for(int i = 0; i < m_numParticles; ++i){
         //printVec3(m_pos[i]); 
     }
 
     accumulateForce(scene); // makes more sense 
     // Print force: 
-    std::cout << "forces: " << std::endl;
+    //std::cout << "forces: " << std::endl;
     for(int i = 0; i < m_numParticles; ++i){
         //printVec3(m_accumForce[i]); 
     } 
 
-    std::cout << "vel: " << std::endl;
+    //std::cout << "vel: " << std::endl;
     updateVelocityFromForce(dt); 
     for(int i = 0; i < m_numParticles; ++i){
         //printVec3(m_vel[i]); 
     }
 
-    std::cout << "ppos: " << std::endl;
+    //std::cout << "ppos: " << std::endl;
     updatePredPosition(dt); 
     for(int i = 0; i < m_numParticles; ++i){
         //printVec3(m_ppos[i]);
     }
 
+
     // find neighbors for each particle 
+    //std::cout << "building grid" << std::endl;
+
+    // make sure that predicted positions don't go out of bounds here
+    
+    memset(m_dpos, 0, m_numParticles * sizeof(Vector3s)); 
+    preserveOwnBoundary(); 
+    applydPToPredPos();
+
+
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
     // loop for solve iterations
-    m_iters = 1; // don't do things
     for(int loop = 0; loop < m_iters; ++loop){
+        //std::cout << "in loop " << loop << std::endl;
         // calculate lambda for each particle
+        //std::cout << "calculating pressures" << std::endl;
         calculatePressures(); 
+        //std::cout << "calculating lambdas" << std::endl;
         calculateLambdas();  
         // Calculate dpos for each particle
+        //std::cout << "calculating dpos" << std::endl;
         calculatedPos(); 
 
         // Deal with collision detection and response
+        //std::cout << "dealing with collisions" << std::endl;
         dealWithCollisions(scene); 
+        //std::cout << "own boundary" << std::endl;
         preserveOwnBoundary(); 
 
-        std::cout << "in loop: " << loop << std::endl;
         for(int i = 0; i < m_numParticles; ++i){
             //std::cout << "  dpos:   "; 
             //printVec3(m_dpos[i]); 
         }
 
         // Update predicted position with dP
+        //std::cout << "applying dpos to ppos" << std::endl;
         applydPToPredPos(); 
     }
+    //std::cout << "end loop" << std::endl;
 
     // Update velocities
     recalculateVelocity(dt); 
@@ -295,19 +311,24 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     // Apply vorticity confinement and XSPH viscosity
 
     updateFinalPosition(); 
-    std::cout << "final pos: " << std::endl;
+    //std::cout << "final pos: " << std::endl;
     updateVelocityFromForce(dt); 
+    int x, y, z;
     for(int i = 0; i < m_numParticles; ++i){
-        printVec3(m_pos[i]); 
+        //std::cout << i << std::endl;
+        getGridIdx(m_pos[i], x, y, z);
+
+
     }
 
 
-    std::cout << "end step system" << std::endl;
+    //std::cout << "end step system" << std::endl;
 }
 
 // Wow this is the ugliest loop something is sure to be wrong somewhere
 // If not enough neighbors? Chosen behaviour: set pressure to rest; don't act on constraints
 void Fluid::calculatePressures(){
+    //std::cout << "starting Pressure calculations" << std::endl;
     int gi = 0; // current grid id
     scalar press; 
     int ncount; // number of neighbors
@@ -318,8 +339,13 @@ void Fluid::calculatePressures(){
             for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
                 for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
                     gi = getGridIdx(i, j, k); 
+                    //std::cout << "grid " << gi << " has " << m_gridCount[gi] << std::endl;
                     for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
-                        press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n], m_h); 
+                        //std::cout << "m_grid[gi]: " << m_grid[gi] << std::endl;
+                        //std::cout << "neighbor at: " << m_grid[gi *m_maxNeighbors + n] << std::endl;
+                        //printVec3(m_ppos[p]); 
+                        //printVec3(m_ppos[m_grid[gi] * m_maxNeighbors + n]);
+                        press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
                         ++ ncount; 
                     }            
                 }
@@ -329,8 +355,9 @@ void Fluid::calculatePressures(){
             m_pcalc[p] = m_p0; 
         else
             m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
-        std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
+        //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
     }
+    //std::cout << "ending Pressure calculations" << std::endl;
 }
 
 Vector3s Fluid::calcGradConstraint(Vector3s& pi, Vector3s& pj){
@@ -347,7 +374,7 @@ Vector3s Fluid::calcGradConstraintAtI(int p){
             for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
                 gi = getGridIdx(i, j, k); // current grid
                 for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
-                    sumGrad += wSpikyKernelGrad(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n], m_h);
+                    sumGrad += wSpikyKernelGrad(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h);
                 }            
             }
         }
@@ -373,7 +400,7 @@ void Fluid::calculateLambdas(){
                 for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
                     gi = getGridIdx(i, j, k); // current grid
                     for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
-                        gradL =  glm::length(calcGradConstraint(m_ppos[p], m_ppos[m_grid[gi] * m_maxNeighbors + n]));  
+                        gradL =  glm::length(calcGradConstraint(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]]));  
                         gradSum += gradL * gradL;
                     }            
                 }
@@ -401,7 +428,7 @@ void Fluid::calculatedPos(){
                 for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
                     gi = getGridIdx(i, j, k); // current grid
                     for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
-                        q = m_grid[gi] * m_maxNeighbors + n; 
+                        q = m_grid[gi * m_maxNeighbors + n]; 
                         dp += (m_lambda[p] + m_lambda[q] + scorr)*wSpikyKernelGrad(m_ppos[p], m_ppos[q], m_h);            
 
                     }            
@@ -445,10 +472,18 @@ void Fluid::updatePredPosition(scalar dt){
 
 void Fluid::getGridIdx(Vector3s &pos, int &idx, int &idy, int &idz){
     // in our case...
+    printVec3(pos);
+
     idx = (pos[0] - m_boundingBox.minX())/m_h; 
     idy = (pos[1] - m_boundingBox.minY())/m_h;
     idz = (pos[2] - m_boundingBox.minZ())/m_h; 
 
+    assert(idx >= 0);
+    assert(idy >= 0);
+    assert(idz >= 0);
+    assert(idx < m_gridX);
+    assert(idy < m_gridY);
+    assert(idz < m_gridZ);
     //idx = (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
 }
 
@@ -469,6 +504,18 @@ void Fluid::clearGrid(){
     memset(m_grid, -1, m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int));
     memset(m_gridCount, 0,  m_gridX * m_gridY * m_gridZ * sizeof(int)); 
 
+    /*
+    for(int i= 0; i < m_gridX * m_gridY * m_gridZ; ++i){
+        if(m_gridCount[i] != 0){
+            std::cout << "count not 0" << std::endl;
+        }
+        for(int j = 0; j < m_maxNeighbors; ++j){
+            if(m_grid[i*m_maxNeighbors + j] != -1){
+                std::cout << "not -1" << std::endl;
+            }
+        }
+    }
+    */
     //    std::cout << m_boundingBox.minX() << ": " << m_boundingBox.maxX() << std::endl;
     //    std::cout << m_h << std::endl;
     //    std::cout << m_gridX * m_gridY * m_gridZ << std::endl;
@@ -485,25 +532,38 @@ void Fluid::clearGrid(){
 void Fluid::buildGrid(){
     for(int i= 0; i < m_numParticles; ++i){
         //getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
-        getGridIdx(m_ppos[i], m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
+        getGridIdx(m_ppos[i], m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); // which grid location am I in 
         //std::cout << "particle " << i << " pos: "; 
         //printVec3(m_ppos[i]); 
         //std::cout << "  grid: " << m_gridInd[i*3] << ", " << m_gridInd[i*3+1] << ", " << m_gridInd[i*3+2] << std::endl;
         //std::cin.get(); 
     }
 
-
+    //std::cout << "got all grid idx" << std::endl;
     // zero things out
     clearGrid(); 
+    //std::cout << "cleared grid" << std::endl;
 
+    /*
+    for(int i = 0; i < m_gridX * m_gridY * m_gridZ; ++i){
+        if(m_gridCount[i] < 0)
+            std::cout << i << " has negative count" << std::endl;
+    }
+*/
     // Build list of grid particles
     int gind; 
     for(int i = 0; i < m_numParticles; ++i){
+        //std::cout << "grid: " << m_gridInd[i*3] << ", " << m_gridInd[i*3+1] << ", " << m_gridInd[i*3+2] << std::endl;
         gind = getGridIdx(m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
+        //std::cout << gind << std::endl;
+        //std::cout << " bounds: " << m_gridX << ", " << m_gridY << ", " << m_gridZ << std::endl;
         //gind = m_gridInd[i];
+        //std::cout << m_gridCount[gind] << " vs limit of " << m_maxNeighbors << std::endl;
         m_grid[gind * m_maxNeighbors + m_gridCount[gind]] = i; 
         m_gridCount[gind] ++; 
+        //std::cout << "grid: " << gind << " has " << m_gridCount[gind] << " particles" << std::endl;
     }
+
 }
 
 void Fluid::preserveOwnBoundary(){
