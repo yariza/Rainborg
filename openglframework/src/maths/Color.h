@@ -26,6 +26,8 @@
 #ifndef COLOR_H
 #define COLOR_H
 
+namespace openglframework {
+
 // Structure Color
 // This structure represents a RGBA color.
 struct Color {
@@ -68,5 +70,7 @@ struct Color {
             return *this;
         }
 };
+
+}
 
 #endif

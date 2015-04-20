@@ -1,5 +1,7 @@
 #include "FluidRenderer.h"
 
+using namespace openglframework;
+
 FluidRenderer::FluidRenderer(Fluid* fluid)
 : m_fluid(fluid)
 , m_shader("shaders/point.vert", "shaders/point.frag")

@@ -1,6 +1,8 @@
 #include "SceneRenderer.h"
 #include "RenderingUtils.h"
 
+using namespace openglframework;
+
 SceneRenderer::SceneRenderer(Scene* scene)
 : m_scene(scene)
 , m_debug(false)

@@ -3,12 +3,10 @@
 
 #include <openglframework.h>
 
-using namespace openglframework;
-
 class OpenGLRenderer
 {
 public:
-    virtual void render(GLFWViewer* viewer, int width, int height) = 0;
+    virtual void render(openglframework::GLFWViewer* viewer, int width, int height) = 0;
 
 };
 

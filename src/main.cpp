@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <glm/glm.hpp>
 #include "Simulation.h"
 
 #include "FluidSimpleGravityForce.h"
@@ -9,10 +8,16 @@
 #include "FluidBrick.h"
 #include "Simulation.h"
 #include "MathDefs.h"
+#include "TimingUtilities.h"
 #include <openglframework.h>
 
 Simulation* g_simulation;
-GLFWViewer* g_viewer;
+openglframework::GLFWViewer* g_viewer;
+openglframework::Color g_bgcolor(1.0, 1.0, 1.0, 1.0);
+
+bool g_rendering_enabled = true;
+double g_sec_per_frame;
+double g_last_time = timingutils::seconds();
 
 void simulate();
 void display(int width, int height);
@@ -85,8 +90,8 @@ int main(void)
 
     testBasicSetup();
 
-    g_viewer = new GLFWViewer();
-    Vector2 windowsSize = Vector2(600, 400);
+    g_viewer = new openglframework::GLFWViewer();
+    openglframework::Vector2 windowsSize = openglframework::Vector2(600, 400);
     bool initOK = g_viewer->init("OpenGL Framework Demo", windowsSize);
     if (!initOK) return 1;
 

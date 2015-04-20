@@ -10,12 +10,12 @@ public:
     FluidRenderer(Fluid* fluid);
     ~FluidRenderer();
 
-    virtual void render(GLFWViewer* viewer, int width, int height);
+    virtual void render(openglframework::GLFWViewer* viewer, int width, int height);
 protected:
     Fluid* m_fluid;
 
 private:
-    Shader m_shader;
+    openglframework::Shader m_shader;
 };
 
 #endif
