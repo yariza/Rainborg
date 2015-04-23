@@ -234,6 +234,7 @@ const FluidBoundingBox& Fluid::getBoundingBox() const{
 
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
+    std::cout << "step" << std::endl;
     //std::cout << "pos: " << std::endl;
     for(int i = 0; i < m_numParticles; ++i){
         //printVec3(m_pos[i]); 
@@ -260,7 +261,7 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 
 
     // find neighbors for each particle 
-    //std::cout << "building grid" << std::endl;
+    std::cout << "building grid" << std::endl;
 
     // make sure that predicted positions don't go out of bounds here
     
@@ -273,20 +274,20 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 
     // loop for solve iterations
     for(int loop = 0; loop < m_iters; ++loop){
-        //std::cout << "in loop " << loop << std::endl;
+        std::cout << "in loop " << loop << std::endl;
         // calculate lambda for each particle
-        //std::cout << "calculating pressures" << std::endl;
+        std::cout << "calculating pressures" << std::endl;
         calculatePressures(); 
-        //std::cout << "calculating lambdas" << std::endl;
+        std::cout << "calculating lambdas" << std::endl;
         calculateLambdas();  
         // Calculate dpos for each particle
-        //std::cout << "calculating dpos" << std::endl;
+        std::cout << "calculating dpos" << std::endl;
         calculatedPos(); 
 
         // Deal with collision detection and response
-        //std::cout << "dealing with collisions" << std::endl;
+        std::cout << "dealing with collisions" << std::endl;
         dealWithCollisions(scene); 
-        //std::cout << "own boundary" << std::endl;
+        std::cout << "own boundary" << std::endl;
         preserveOwnBoundary(); 
 
         for(int i = 0; i < m_numParticles; ++i){
@@ -295,10 +296,10 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
         }
 
         // Update predicted position with dP
-        //std::cout << "applying dpos to ppos" << std::endl;
+        std::cout << "applying dpos to ppos" << std::endl;
         applydPToPredPos(); 
     }
-    //std::cout << "end loop" << std::endl;
+    std::cout << "end loop" << std::endl;
 
     // Update velocities
     recalculateVelocity(dt); 
@@ -322,7 +323,7 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     }
 
 
-    //std::cout << "end step system" << std::endl;
+    std::cout << "end step system" << std::endl;
 }
 
 // Wow this is the ugliest loop something is sure to be wrong somewhere
@@ -472,7 +473,7 @@ void Fluid::updatePredPosition(scalar dt){
 
 void Fluid::getGridIdx(Vector3s &pos, int &idx, int &idy, int &idz){
     // in our case...
-    printVec3(pos);
+    //printVec3(pos);
 
     idx = (pos[0] - m_boundingBox.minX())/m_h; 
     idy = (pos[1] - m_boundingBox.minY())/m_h;

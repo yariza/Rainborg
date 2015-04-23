@@ -24,7 +24,7 @@ void testBasicSetup(){
 
     FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10); 
 
-    Fluid *fluid = new Fluid(1000, 2.0, 10000.0, .5, 3, 20, 3);
+    Fluid *fluid = new Fluid(1000, 2.0, 10000.0, .5, 3, 100, 3);
 
     //fluid.setFPMass(2.0);
     //fluid.setRestDensity(1.0);
@@ -114,9 +114,9 @@ void loadScene( const std::string& file_name) {
         FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
         scene->insertFluidForce(sgf);
 
-        FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10);
+        FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(1000, 2.0, 10000.0, .5, 3, 20, 3);
+        Fluid *fluid = new Fluid(10000, 2.0, 100000.0, 1.0, 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
@@ -167,7 +167,7 @@ int main(int args, char **argv)
     parseCommandLine(args, argv);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
-    testBasicSetup();
+    //testBasicSetup();
 
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
