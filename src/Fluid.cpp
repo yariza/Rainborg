@@ -272,6 +272,7 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
+    m_iters = 1;
     // loop for solve iterations
     for(int loop = 0; loop < m_iters; ++loop){
         std::cout << "in loop " << loop << std::endl;
@@ -346,7 +347,16 @@ void Fluid::calculatePressures(){
                         //std::cout << "neighbor at: " << m_grid[gi *m_maxNeighbors + n] << std::endl;
                         //printVec3(m_ppos[p]); 
                         //printVec3(m_ppos[m_grid[gi] * m_maxNeighbors + n]);
-                        press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
+                        scalar pressN = wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
+                        if(pressN > 1000000 || pressN < -1000000){
+                            std::cout << "pressure add: " << pressN << std::endl;
+                            std::cout << "m_ppos[p] "; 
+                            printVec3(m_ppos[p]);
+                            std::cout << "m_ppos[q] " << std::endl;
+                            printVec3(m_ppos[m_grid[gi * m_maxNeighbors + n]]);  
+                        }
+                        press += pressN;
+                        //press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
                         ++ ncount; 
                     }            
                 }
@@ -591,8 +601,21 @@ void Fluid::updateFinalPosition(){
 }
 
 void Fluid::applydPToPredPos(){
+    bool broke = false; 
     for(int i = 0; i < m_numParticles; ++i){
         m_ppos[i] += m_dpos[i]; 
+        if(glm::length(m_dpos[i]) > 5.0){
+            broke = true;
+            std::cout << "huge update at " << i << std::endl;
+            std::cout << "  pressure: " << m_pcalc[i] << std::endl;
+            std::cout << "  lambda: " << m_lambda[i] << std::endl;
+            std::cout << "  grid: " << m_gridInd[i] << std::endl;
+            std::cout << "  grid count: " << m_gridCount[m_gridInd[i]] << std::endl;
+
+        }
+    }
+    if(!broke){
+        std::cout << "arbitrary pressure: " << m_pcalc[700] << std::endl;
     }
 }
 
