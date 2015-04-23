@@ -303,26 +303,32 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     std::cout << "end loop" << std::endl;
 
     // Update velocities
+    std::cout << "recalculating velocities" << std::endl;
     recalculateVelocity(dt); 
     //std::cout << "new vel: " << std::endl;
-    updateVelocityFromForce(dt); 
+    //updateVelocityFromForce(dt);  // Yeah no this shouldn't be here
     for(int i = 0; i < m_numParticles; ++i){
         //printVec3(m_vel[i]); 
     }
 
     // Apply vorticity confinement and XSPH viscosity
 
+    std::cout << "updating final positions" << std::endl;
     updateFinalPosition(); 
+
+    // Why IS THIS HERE??? 
+    /*
     //std::cout << "final pos: " << std::endl;
+    std::cout << "updating velocity from force" << std::endl;
     updateVelocityFromForce(dt); 
     int x, y, z;
     for(int i = 0; i < m_numParticles; ++i){
         //std::cout << i << std::endl;
-        getGridIdx(m_pos[i], x, y, z);
+        //getGridIdx(m_pos[i], x, y, z);
 
 
     }
-
+    */
 
     std::cout << "end step system" << std::endl;
 }
@@ -367,6 +373,13 @@ void Fluid::calculatePressures(){
         else
             m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
         //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
+    
+        if(press > 1000000 || press < -100000){
+            std::cout << "pressure : " << press << std::endl;
+            std::cout << "had " << ncount << " neighbors" << std::endl;
+        }
+
+
     }
     //std::cout << "ending Pressure calculations" << std::endl;
 }
