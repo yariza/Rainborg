@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <time.h>
 #include "Simulation.h"
 #include "FluidSimpleGravityForce.h"
 #include "FluidBoundingBox.h"
@@ -164,6 +165,8 @@ void loadScene( const std::string& file_name) {
 
 int main(int args, char **argv)
 {
+    srand(time(NULL)); 
+    
     parseCommandLine(args, argv);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
