@@ -116,14 +116,14 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(10000, 2.0, 100000.0, 1.0, 3, 100, 3);
+        Fluid *fluid = new Fluid(2000, 2.0, 100000.0, .5, 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
          float x; 
          float y; 
          float z;
-         for(int i = 0; i < 1000; ++i){
+         for(int i = 0; i < 2000; ++i){
              x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
              y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
              z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
@@ -149,7 +149,7 @@ void loadScene( const std::string& file_name) {
 
         g_simulation = new Simulation(scene, stepper, renderer);
         g_dt = 0.01;
-        max_time = 1.0;
+        max_time = 10.0;
     //END PLACEHOLDER
 
     assert( g_simulation != NULL );
