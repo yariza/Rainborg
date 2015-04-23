@@ -354,24 +354,26 @@ void Fluid::calculatePressures(){
                         //printVec3(m_ppos[p]); 
                         //printVec3(m_ppos[m_grid[gi] * m_maxNeighbors + n]);
                         scalar pressN = wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
-                        if(pressN > 1000000 || pressN < -1000000){
-                            std::cout << "pressure add: " << pressN << std::endl;
-                            std::cout << "m_ppos[p] "; 
-                            printVec3(m_ppos[p]);
-                            std::cout << "m_ppos[q] " << std::endl;
-                            printVec3(m_ppos[m_grid[gi * m_maxNeighbors + n]]);  
+                        if(p == 700 || pressN > 1000000 || pressN < -1000000){
+                            //std::cout << "pressure add: " << pressN << std::endl;
+                            //std::cout << "m_ppos[p] "; 
+                            //printVec3(m_ppos[p]);
+                            //std::cout << "m_ppos[q] ";
+                            //printVec3(m_ppos[m_grid[gi * m_maxNeighbors + n]]);  
                         }
                         press += pressN;
                         //press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
-                        ++ ncount; 
+                        if(pressN > 0)
+                            ++ ncount; 
                     }            
                 }
             }
         }        
         if(ncount <= m_minNeighbors) // don't count self
             m_pcalc[p] = m_p0; 
-        else
+        else 
             m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
+        
         //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
     
         if(press > 1000000 || press < -100000){
@@ -379,6 +381,8 @@ void Fluid::calculatePressures(){
             std::cout << "had " << ncount << " neighbors" << std::endl;
         }
 
+        if(p == 700)
+            std::cout << "arb count: " << ncount << std::endl;
 
     }
     //std::cout << "ending Pressure calculations" << std::endl;
