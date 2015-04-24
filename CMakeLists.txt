@@ -4,6 +4,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 # Project configuration
 PROJECT(pbf)
 
+option(GPU_ENABLED "Compile with GPU support" ON)
+
 # Add directory with macros
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
