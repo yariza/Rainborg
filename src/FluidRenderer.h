@@ -16,6 +16,15 @@ protected:
 
 private:
     openglframework::Shader m_shader;
+
+    //gpu stuff
+    GLuint vbo;
+    GLuint ibo;
+
+    GLfloat *vertices;
+    GLuint *indices;
+
+    GLuint position_location;
 };
 
 #endif
