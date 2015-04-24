@@ -63,6 +63,7 @@ if (GPU_ENABLED)
 endif (GPU_ENABLED)
 
 if (GPU_ENABLED)
+   cuda_include_directories(${CMAKE_SOURCE_DIR}/include/openglframework)
    cuda_add_executable(testflow ${Headers} ${Templates} ${Sources} ${CUDA_O})
 else (GPU_ENABLED)
    add_executable ( testflow ${Headers} ${Templates} ${Sources} ${CUDA_O})
