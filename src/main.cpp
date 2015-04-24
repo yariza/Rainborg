@@ -117,7 +117,7 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(3000, 2.0, 100000.0, .5, 3, 100, 3);
+        Fluid *fluid = new Fluid(3000, 10000.0, 100000.0, 1.5, 3, 300, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
