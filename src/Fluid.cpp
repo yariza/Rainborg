@@ -274,7 +274,6 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
-    m_iters = 1;
     // loop for solve iterations
     for(int loop = 0; loop < m_iters; ++loop){
         std::cout << "in loop " << loop << std::endl;
