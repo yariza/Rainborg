@@ -35,3 +35,6 @@ bool g_simulation_ran_to_completion = false;
 
 // Parser state
 std::string g_xml_scene_file;
+
+// gpu mode?
+bool g_gpu_mode;

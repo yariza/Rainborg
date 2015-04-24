@@ -80,11 +80,23 @@ void parseCommandLine(int argc, char **argv) {
       // Run the simulation with rendering enabled or disabled
       TCLAP::ValueArg<bool> display("d", "display", "Run the simulation with display enabled if 1, without if 0", false, true, "boolean", cmd);
 
+      // gpu mode
+      TCLAP::ValueArg<bool> gpu_mode("g", "gpu-mode", "Simulate using GPU if 1, without if 0", false, false, "boolean", cmd);
+
       cmd.parse(argc, argv);
 
       g_xml_scene_file = scene.getValue();
       g_paused = paused.getValue();
       g_rendering_enabled = display.getValue();
+
+      g_gpu_mode = gpu_mode.getValue();
+
+      #ifndef GPU_ENABLED
+        if (g_gpu_mode) {
+            std::cerr << "CUDA not available! Compile with flag GPU_ENABLED (cmake .. -DGPU_ENABLED=ON)" << std::endl;
+            exit(1);
+        }
+      #endif
 
     }
     catch (TCLAP::ArgException& e) 
