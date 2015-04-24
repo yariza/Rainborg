@@ -55,7 +55,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include/openglframework)
 if (GPU_ENABLED)
     find_package(CUDA)
     # nvcc flags
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_20,code=sm_20)
+    #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_20,code=sm_20)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -arch=sm_20)
     append_files(CudaFiles "cu" /src /src/gpu)
     #cuda_compile(CUDA_O ${CudaFiles})
     # add def for program to check

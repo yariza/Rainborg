@@ -1,9 +1,10 @@
-//#ifdef GPU_ENABLED
+#ifdef GPU_ENABLED
 #ifndef GPU_FLUID_THING_H__
 #define GPU_FLUID_THING_H__
 
 #include <cuda.h>
 #include <iostream>
+#include <stdio.h>
 #include <vector>
 #include <glm/glm.hpp>
 typedef float scalar;
@@ -36,14 +37,14 @@ typedef glm::vec4 Vector4s;
 #define STARTZMAX 9.0
 
 
-
 extern "C" { 
 void initGPUFluid();
 void stepSystemGPUFluid(); 
+void cleanUpGPUFluid(); 
 }
 
 
 
 
 #endif
-//#endif
+#endif

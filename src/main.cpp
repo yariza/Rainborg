@@ -56,7 +56,8 @@ bool g_gpu_mode;
 void testBasicSetup(){
     // I guess.... try initializing a scene? 
 
-    initGPUFluid(); 
+    initGPUFluid();
+    return; 
 
 
     FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
@@ -248,6 +249,7 @@ void stepSystem() {
       {
         std::cout << outputmod::startpink << "PBF message: " << outputmod::endpink << "Simulation complete at time " << g_current_step*g_dt << ". Exiting." << std::endl;
         g_simulation_ran_to_completion = true;
+        cleanUpGPUFluid();
         exit(0);
       }
 
