@@ -36,10 +36,11 @@ typedef glm::vec4 Vector4s;
 #define STARTZMAX 9.0
 
 
- 
-extern void initGPUFluid();
-extern void stepSystemGPUFluid(); 
 
+extern "C" { 
+void initGPUFluid();
+void stepSystemGPUFluid(); 
+}
 
 
 
