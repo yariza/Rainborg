@@ -7,7 +7,7 @@
 static void gpuCheckError(cudaError_t err, const char *file, int line){
     if(err != cudaSuccess){
         fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString(err), file, line);
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
     }   
 }
 
@@ -16,10 +16,10 @@ __constant__ int GRIDX;
 __constant__ int GRIDY;
 __constant__ int GRIDZ;
 
-scalar *d_pos;
-scalar *d_vel; 
-scalar *d_ppos;
-scalar *d_dpos;
+Vector3s *d_pos;
+Vector3s *d_vel; 
+Vector3s *d_ppos;
+Vector3s *d_dpos;
 scalar *d_pcalc; 
 scalar *d_lambda; 
 
@@ -34,12 +34,30 @@ __global__ void sendToVBO(float *vbo, Vector3s* d_pos){
         vbo[id*4+1] = d_pos[id][1];
         vbo[id*4+2] = d_pos[id][2];
         vbo[id*4+3] = 1.0f;
+        //vbo[id*4+0] = 1.0f; 
+        //vbo[id*4+1] = 1.0f;
+        //vbo[id*4+2] = 1.0f;
+        //vbo[id*4+3] = 1.0f;
 
     }
 
 }
 
+__global__ void updateFromForce(Vector3s* d_pos, Vector3s* d_vel, Vector3s* d_ppos, scalar dt, Vector3s force){
+    int id = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(id < NUM_PARTICLES){
+        d_vel[id] += force * dt;
+        d_ppos[id] = d_pos[id] + d_vel[id]*dt; 
+    }
+}
 
+__global__ void updateForReals(Vector3s* d_pos, Vector3s* d_vel, Vector3s* d_ppos, scalar dt){
+    int id = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(id < NUM_PARTICLES){
+        d_vel[id] = (d_ppos[id] - d_pos[id])/dt;
+        d_pos[id] = d_ppos[id];
+    }
+}
 
 void initGPUFluid(){
     // allocate memory on GPU
@@ -93,23 +111,48 @@ void initGPUFluid(){
 
 }
 
-//void 
+void preserveOwnBoundary(){
 
 
-void stepSystemGPUFluid(){
-    // 
-    // predict positions
-    // init dpos to 0
-    // preserve boundary
-    // apply dp to predpos
-    
+} 
+
+
+
+void updatePredFromForce(scalar dt){
+    int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0));
+    updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, -10.0f, 0.f));    
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
+
 
 }
 
+void updateValForReals(scalar dt){
+    int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0));
+    updateForReals<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt);    
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
+
+
+}
+
+void stepSystemGPUFluid(scalar dt){
+    updatePredFromForce(dt);    
+    //preserveOwnBoundary(); 
+    //applydPToPredPos();
+    //buildGrid(); 
+    updateValForReals(dt); 
+
+}
+
+
+
 void updateVBOGPUFluid(float *vboptr){
-
-    
-
+    int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0)); 
+    sendToVBO<<<gridSize, BLOCKSIZE>>>(vboptr, d_pos);  
+    //GPU_CHECKERROR(cudaGetLastError());
+    // Is sad the first call, then fine
+    GPU_CHECKERROR(cudaThreadSynchronize());
 
 }
 
@@ -125,10 +168,6 @@ void cleanUpGPUFluid(){
     GPU_CHECKERROR(cudaFree(d_grid));
     GPU_CHECKERROR(cudaFree(d_gridCount));
     GPU_CHECKERROR(cudaFree(d_gridInd));
-
-
-
-
 
 
 }

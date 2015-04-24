@@ -56,7 +56,7 @@ bool g_gpu_mode;
 void testBasicSetup(){
     // I guess.... try initializing a scene? 
 
-    initGPUFluid();
+    //initGPUFluid();
     return; 
 
 
@@ -222,11 +222,15 @@ void loadScene( const std::string& file_name) {
 int main(int args, char **argv)
 {
     srand(time(NULL)); 
+    initGPUFluid();
+ 
     
     parseCommandLine(args, argv);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
     //testBasicSetup();
+
+
 
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
@@ -254,8 +258,13 @@ void stepSystem() {
       }
 
       // Step the system forward in time
-      g_simulation->stepSystem(g_dt);
-      std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen << (g_current_step*g_dt) << std::endl;
+      if(g_gpu_mode){
+        stepSystemGPUFluid(g_dt);   
+      }
+      else{
+        g_simulation->stepSystem(g_dt);
+      }
+        std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen << (g_current_step*g_dt) << std::endl;
       g_current_step++;
 }
 
