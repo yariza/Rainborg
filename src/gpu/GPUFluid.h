@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <vector>
 #include <glm/glm.hpp>
+#include <curand.h>
+#include <curand_kernel.h>
 typedef float scalar;
 typedef glm::vec3 Vector3s;
 typedef glm::vec4 Vector4s;
@@ -41,6 +43,7 @@ extern "C" {
 void initGPUFluid();
 void stepSystemGPUFluid(); 
 void cleanUpGPUFluid(); 
+void updateVBOGPUFluid(float *vboptr);
 }
 
 

@@ -1,5 +1,14 @@
 #include "FluidRenderer.h"
 #include "main.h"
+#ifdef GPU_ENABLED
+#include <cuda_gl_interop.h>
+#include <cuda_runtime.h>
+#include <cuda.h>
+#include "gpu/GPUFluid.h"
+//#include <helper_cuda.h>
+//#include <helper_cuda_gl.h>
+
+#endif
 
 using namespace openglframework;
 
@@ -13,11 +22,11 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
     assert(m_fluid != NULL);
 
     if (g_gpu_mode) {
-        vertices = new GLfloat[4 * NUM_PARTS];
-        indices = new GLuint[NUM_PARTS];
+        vertices = new GLfloat[4 * NUM_PARTICLES];
+        indices = new GLuint[NUM_PARTICLES];
 
         GLfloat x, y, z;
-        for (int i=0; i<NUM_PARTS; i++) {
+        for (int i=0; i<NUM_PARTICLES; i++) {
             x = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
             y = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
             z = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
@@ -34,17 +43,21 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
         glGenBuffers(1, &ibo);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, 4*NUM_PARTS*sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 4*NUM_PARTICLES*sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUM_PARTS*sizeof(GLuint), indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUM_PARTICLES*sizeof(GLuint), indices, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+
         #ifdef GPU_ENABLED
-        cudaGLSetGLDevice( compat_getMaxGflopsDeviceId() );
+        //cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() );
+        //cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());
+        cudaGLSetGLDevice(0);
         cudaGLRegisterBufferObject(vbo);
         #endif
+
     }
 }
 
@@ -75,9 +88,10 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
     if (g_gpu_mode) {
 
         float *dptrvert=NULL;
+
         #ifdef GPU_ENABLED
         cudaGLMapBufferObject((void**)&dptrvert, vbo);
-        // updateVBO(dptrvert); // update content inside vbo object - implement this method in kernel!
+        updateVBOGPUFluid(dptrvert); // update content inside vbo object - implement this method in kernel!
         cudaGLUnmapBufferObject(vbo);
         #endif
 
@@ -88,7 +102,7 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
-        glDrawElements(GL_POINTS, NUM_PARTS, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_POINTS, NUM_PARTICLES, GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(position_location);
     }

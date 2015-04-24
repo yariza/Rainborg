@@ -1,6 +1,8 @@
 #ifdef GPU_ENABLED
 #include "GPUFluid.h"
 
+#define BLOCKSIZE 256
+
 #define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
 static void gpuCheckError(cudaError_t err, const char *file, int line){
     if(err != cudaSuccess){
@@ -24,6 +26,19 @@ scalar *d_lambda;
 int *d_grid;
 int *d_gridCount;
 int *d_gridInd; 
+
+__global__ void sendToVBO(float *vbo, Vector3s* d_pos){
+    int id = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(id < NUM_PARTICLES){
+        vbo[id*4+0] = d_pos[id][0];
+        vbo[id*4+1] = d_pos[id][1];
+        vbo[id*4+2] = d_pos[id][2];
+        vbo[id*4+3] = 1.0f;
+
+    }
+
+}
+
 
 
 void initGPUFluid(){
@@ -49,17 +64,52 @@ void initGPUFluid(){
     GPU_CHECKERROR(cudaMalloc((void **)&d_gridCount, grid_X * grid_Y * grid_Z *sizeof(int)));
     GPU_CHECKERROR(cudaMalloc((void **)&d_gridInd, NUM_PARTICLES * sizeof(int)));
 
+    GPU_CHECKERROR(cudaMemset((void *)d_vel, 0, NUM_PARTICLES * sizeof(Vector3s)));
+
+    /*
+    curandState *state;
+    curandGenerator_t gen;
+    curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+    curandSetPseudoRandomGeneratorSeed(gen, 1234ULL);
+    curandGenerateUniform(gen, d_pcalc, NUM_PARTICLES); // temporarily store here I guess
+    curandDestroyGenerator(gen);
+    */
+
+    Vector3s *h_pos;
+    GPU_CHECKERROR(cudaMallocHost((void **)&h_pos, NUM_PARTICLES * sizeof(Vector3s)));
+    float x; 
+    float y; 
+    float z;
+    for(int i = 0; i < NUM_PARTICLES; ++i){
+         x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+         y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+         z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+         h_pos[i] = Vector3s(x, y, z);
+    }
+    GPU_CHECKERROR(cudaMemcpy((void *)d_pos, (void *)h_pos, NUM_PARTICLES * sizeof(Vector3s), cudaMemcpyHostToDevice));
+
+    GPU_CHECKERROR(cudaFreeHost(h_pos));
+
+
 }
 
-void 
+//void 
 
 
 void stepSystemGPUFluid(){
-    // accumulate Forces
+    // 
     // predict positions
     // init dpos to 0
     // preserve boundary
     // apply dp to predpos
+    
+
+}
+
+void updateVBOGPUFluid(float *vboptr){
+
+    
+
 
 }
 
