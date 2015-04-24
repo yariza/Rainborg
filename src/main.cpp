@@ -11,9 +11,53 @@
 #include "MathDefs.h"
 #include "StringUtilities.h"
 #include <tclap/CmdLine.h>
+#include <stdlib.h>
+#include <openglframework.h>
+#include "Simulation.h"
+#include "TimingUtilities.h"
+#include "gpu/GPUFluid.h"
+
+// callback functions for GLFW
+void idle();
+void display(int width, int height);
+void reshape(GLFWwindow* window, int width, int height);
+void mouseButton(GLFWwindow* window, int button, int action, int mods);
+void mouseMotion(GLFWwindow* window, double x, double y);
+void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
+void errorCallback(int error, const char* description);
+
+// other functions
+void initializeOpenGLandGLFW();
+void headlessSimLoop();
+void stepSystem();
+
+// Global variables
+Simulation* g_simulation;
+openglframework::GLFWViewer* g_viewer;
+openglframework::Color g_bgcolor(0.0, 0.0, 0.0, 1.0);
+
+bool g_rendering_enabled = true;
+double g_sec_per_frame;
+double g_last_time = timingutils::seconds();
+int g_num_steps = 0;
+scalar g_dt = 0.0;
+
+// Simulation state
+bool g_paused = true;
+int g_current_step = 0;
+bool g_simulation_ran_to_completion = false;
+
+// Parser state
+std::string g_xml_scene_file;
+
+// gpu mode?
+bool g_gpu_mode;
 
 void testBasicSetup(){
     // I guess.... try initializing a scene? 
+
+    initGPUFluid();
+    return; 
 
 
     FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
@@ -80,11 +124,23 @@ void parseCommandLine(int argc, char **argv) {
       // Run the simulation with rendering enabled or disabled
       TCLAP::ValueArg<bool> display("d", "display", "Run the simulation with display enabled if 1, without if 0", false, true, "boolean", cmd);
 
+      // gpu mode
+      TCLAP::ValueArg<bool> gpu_mode("g", "gpu-mode", "Simulate using GPU if 1, without if 0", false, false, "boolean", cmd);
+
       cmd.parse(argc, argv);
 
       g_xml_scene_file = scene.getValue();
       g_paused = paused.getValue();
       g_rendering_enabled = display.getValue();
+
+      g_gpu_mode = gpu_mode.getValue();
+
+      #ifndef GPU_ENABLED
+        if (g_gpu_mode) {
+            std::cerr << "CUDA not available! Compile with flag GPU_ENABLED (cmake .. -DGPU_ENABLED=ON)" << std::endl;
+            exit(1);
+        }
+      #endif
 
     }
     catch (TCLAP::ArgException& e) 
@@ -117,7 +173,7 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(3000, 2.0, 100000.0, .5, 3, 100, 3);
+        Fluid *fluid = new Fluid(3000, 10000.0, 100000.0, 1.5, 3, 300, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
@@ -193,6 +249,7 @@ void stepSystem() {
       {
         std::cout << outputmod::startpink << "PBF message: " << outputmod::endpink << "Simulation complete at time " << g_current_step*g_dt << ". Exiting." << std::endl;
         g_simulation_ran_to_completion = true;
+        cleanUpGPUFluid();
         exit(0);
       }
 

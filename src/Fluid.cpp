@@ -17,6 +17,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
     //m_ppos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
     m_pcalc = (scalar *)malloc(numParticles * sizeof(scalar)); 
+    memset(m_pcalc, 0, numParticles * sizeof(scalar));
     //m_dpos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     //m_vel = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
     //m_accumForce = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
@@ -60,6 +61,7 @@ Fluid::Fluid(const Fluid& otherFluid)
     //m_ppos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     m_lambda = (scalar *)malloc(m_numParticles * sizeof(scalar));
     m_pcalc = (scalar *)malloc(m_numParticles * sizeof(scalar)); 
+    memset(m_pcalc, 0, m_numParticles * sizeof(scalar));
     //m_dpos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar)); 
     //m_vel = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     //m_accumForce = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
@@ -343,6 +345,7 @@ void Fluid::calculatePressures(){
     for(int p = 0; p < m_numParticles; ++p){
         // grab neighbors?  
         ncount = 0; 
+        press = 0;
         for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
             for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
                 for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
@@ -355,12 +358,14 @@ void Fluid::calculatePressures(){
                         //printVec3(m_ppos[m_grid[gi] * m_maxNeighbors + n]);
                         scalar pressN = wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
                         if(p == 700 || pressN > 1000000 || pressN < -1000000){
+                        //if(p == 700 || pressN > 1000000 || pressN < -1000000){
                             //std::cout << "pressure add: " << pressN << std::endl;
                             //std::cout << "m_ppos[p] "; 
                             //printVec3(m_ppos[p]);
                             //std::cout << "m_ppos[q] ";
                             //printVec3(m_ppos[m_grid[gi * m_maxNeighbors + n]]);  
                         }
+                        //}
                         press += pressN;
                         //press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
                         if(pressN > 0)
@@ -369,7 +374,7 @@ void Fluid::calculatePressures(){
                 }
             }
         }        
-        if(ncount <= m_minNeighbors) // don't count self
+        if(ncount <= m_minNeighbors && m_pcalc[p] == 0) // don't count self
             m_pcalc[p] = m_p0; 
         else 
             m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
@@ -381,8 +386,10 @@ void Fluid::calculatePressures(){
             std::cout << "had " << ncount << " neighbors" << std::endl;
         }
 
-        if(p == 700)
+        if(p == 700){
             std::cout << "arb count: " << ncount << std::endl;
+            std::cout << "arb press: " << m_fpmass * press << std::endl;
+        }
 
     }
     //std::cout << "ending Pressure calculations" << std::endl;
@@ -421,6 +428,7 @@ void Fluid::calculateLambdas(){
     scalar gradL; 
     int gi; 
     for(int p = 0; p < m_numParticles; ++p){
+        gradSum = 0;
         top = -(m_pcalc[p]/m_p0 - 1.0); 
         // for all neighbors, calculate Constraint gradient at p 
         for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){

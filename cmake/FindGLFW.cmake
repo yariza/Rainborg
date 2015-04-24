@@ -49,6 +49,7 @@ find_path( GLFW_INCLUDE_DIR
         /usr/include/GL
         /usr/include
         ~/include
+        ~/Installs/include
     DOC 
         "The directory where GL/glfw.h resides"
 )
@@ -147,6 +148,7 @@ else ()
                 /usr/openwin/lib
                 /usr/X11R6/lib
                 ~/lib
+                ~/Installs/lib
             DOC 
                 "The GLFW library"
         )
