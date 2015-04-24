@@ -50,6 +50,22 @@ FluidRenderer::~FluidRenderer() {
 
 void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_shader.bind();
+
+    const Camera& camera = viewer->getCamera();
+
+    Matrix4 matrixIdentity;
+    matrixIdentity.setToIdentity();
+
+    // m_shader.setVector3Uniform("cameraWorldPosition", viewer->getCamera().getOrigin());
+    m_shader.setMatrix4x4Uniform("modelToWorldMatrix", matrixIdentity);
+    m_shader.setMatrix4x4Uniform("worldToCameraMatrix", camera.getTransformMatrix().getInverse());
+    m_shader.setMatrix4x4Uniform("projectionMatrix", camera.getProjectionMatrix());
+
+    glPointSize(5.0);
 
     if (g_gpu_mode) {
 
@@ -60,29 +76,11 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
-        glPointSize(4.0);
         glDrawElements(GL_POINTS, NUM_PARTS, GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(position_location);
     }
     else {
-
-        glEnable(GL_DEPTH_TEST);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        m_shader.bind();
-
-        const Camera& camera = viewer->getCamera();
-
-        Matrix4 matrixIdentity;
-        matrixIdentity.setToIdentity();
-
-        // m_shader.setVector3Uniform("cameraWorldPosition", viewer->getCamera().getOrigin());
-        m_shader.setMatrix4x4Uniform("modelToWorldMatrix", matrixIdentity);
-        m_shader.setMatrix4x4Uniform("worldToCameraMatrix", camera.getTransformMatrix().getInverse());
-        m_shader.setMatrix4x4Uniform("projectionMatrix", camera.getProjectionMatrix());
-
-        glPointSize(5.0);
 
         Vector3s* posArray = m_fluid->getFPPos();
 
@@ -93,6 +91,6 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
             }
         glEnd();
 
-        m_shader.unbind();
     }
+    m_shader.unbind();
 }
