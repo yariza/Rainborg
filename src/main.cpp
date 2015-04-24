@@ -15,6 +15,7 @@
 #include <openglframework.h>
 #include "Simulation.h"
 #include "TimingUtilities.h"
+#include "gpu/GPUFluid.h"
 
 // callback functions for GLFW
 void idle();
@@ -54,6 +55,8 @@ bool g_gpu_mode;
 
 void testBasicSetup(){
     // I guess.... try initializing a scene? 
+
+    initGPUFluid(); 
 
 
     FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
@@ -222,7 +225,7 @@ int main(int args, char **argv)
     parseCommandLine(args, argv);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
-    //testBasicSetup();
+    testBasicSetup();
 
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();

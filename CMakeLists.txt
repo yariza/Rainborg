@@ -13,8 +13,8 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 include (Common)
 
 # Add source files
-append_files( Headers "h" src/ )
-append_files( Sources "cpp" src/ )
+append_files( Headers "h" src/ /src/gpu/)
+append_files( Sources "cpp" src/ /src/gpu/)
 
 # Find OpenGL
 find_package( OpenGL REQUIRED )
@@ -55,16 +55,16 @@ include_directories(${CMAKE_SOURCE_DIR}/include/openglframework)
 if (GPU_ENABLED)
     find_package(CUDA)
     # nvcc flags
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_20,code=sm_20)
-    append_files(CudaFiles "cu" /src)
-    cuda_compile(CUDA_O ${CudaFiles})
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_20,code=sm_20)
+    append_files(CudaFiles "cu" /src /src/gpu)
+    #cuda_compile(CUDA_O ${CudaFiles})
     # add def for program to check
     add_definitions(-DGPU_ENABLED)
 endif (GPU_ENABLED)
 
 if (GPU_ENABLED)
    cuda_include_directories(${CMAKE_SOURCE_DIR}/include/openglframework)
-   cuda_add_executable(testflow ${Headers} ${Templates} ${Sources} ${CUDA_O})
+   cuda_add_executable(testflow ${Headers} ${Templates} ${Sources} ${CudaFiles})
 else (GPU_ENABLED)
    add_executable ( testflow ${Headers} ${Templates} ${Sources} ${CUDA_O})
 endif (GPU_ENABLED)
@@ -72,5 +72,6 @@ endif (GPU_ENABLED)
 # copy shaders
 copy_files(testflow "src/shaders/*" ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
-target_link_libraries( testflow ${EXTRA_LIBS} ${pbf_LIBRARIES} openglframework )
+
+target_link_libraries( testflow ${EXTRA_LIBS} ${pbf_LIBRARIES} openglframework)
 

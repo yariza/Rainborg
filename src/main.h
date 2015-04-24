@@ -4,4 +4,6 @@
 // gpu mode?
 extern bool g_gpu_mode;
 
+extern void initGPUFluid();
+
 #endif
