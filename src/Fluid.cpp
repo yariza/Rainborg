@@ -269,12 +269,17 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     
     memset(m_dpos, 0, m_numParticles * sizeof(Vector3s)); 
     preserveOwnBoundary(); 
+    
     applydPToPredPos();
+    
+    //recalculateVelocity(dt); 
+    //updateFinalPosition();
+    //return; 
+
 
 
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
-    m_iters = 1;
     // loop for solve iterations
     for(int loop = 0; loop < m_iters; ++loop){
         std::cout << "in loop " << loop << std::endl;
