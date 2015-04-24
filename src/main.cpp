@@ -11,6 +11,7 @@
 #include "FluidBrick.h"
 #include "MathDefs.h"
 #include "StringUtilities.h"
+#include "SceneXMLParser.h"
 #include <tclap/CmdLine.h>
 #include <stdlib.h>
 #include <openglframework.h>
@@ -52,6 +53,7 @@ bool g_simulation_ran_to_completion = false;
 
 // Parser state
 std::string g_xml_scene_file;
+std::string g_description;
 
 // gpu mode?
 bool g_gpu_mode;
@@ -161,12 +163,12 @@ void loadScene( const std::string& file_name) {
     // Maximum frequency, in wall clock time, to execute the simulation for. This serves as a cap for simulations that run too fast to see a solution.
     scalar steps_per_sec_cap = 100.0;
 
-    // Load the simulation and pieces of rendring and UI state
+    // Load the simulation and pieces of rendring and UI startgreen
     assert( g_simulation == NULL );
     // XML parse scene here
-    // TwoDSceneXMLParser xml_scene_parser;
-    // xml_scene_parser.loadExecutableSimulation( file_name, g_simulate_comparison, g_rendering_enabled, g_display_controller, &g_executable_simulation,
-    //                                            view, g_dt, max_time, steps_per_sec_cap, g_bgcolor, g_description, g_scene_tag );
+    SceneXMLParser xml_scene_parser;
+    xml_scene_parser.loadSimulation( file_name, g_rendering_enabled, g_viewer, &g_simulation,
+                                    g_dt, max_time, steps_per_sec_cap, g_bgcolor, g_description);
 
     //PLACEHOLDER
         Scene *scene = new Scene();
