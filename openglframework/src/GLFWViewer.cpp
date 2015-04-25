@@ -89,8 +89,6 @@ void GLFWViewer::bindDisplayCallback(void (*displayCallback) (int, int)) {
 void GLFWViewer::reshape(int width, int height) {
     mCamera.setDimensions(width, height);
     glViewport(0, 0, width, height);
-
-    display();
 }
 
 void GLFWViewer::keyboard(int key, int scancode, int action, int mods) {
@@ -262,7 +260,7 @@ void GLFWViewer::rotate(int xMouse, int yMouse) {
                 axis.normalize();
                 float angle = 2.0f * acos(cosAngle);
 
-                // Rotate the camera around the center of the scene
+                // Rotate the camera around the center of the scene>
                 mCamera.rotateAroundLocalPoint(axis, -angle, mCenterScene);
             }
         }
@@ -279,4 +277,9 @@ int GLFWViewer::getWindowHeight() {
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
     return height;
+}
+
+void GLFWViewer::setWindowSize(int width, int height) {
+    glfwSetWindowSize(m_window, width, height);
+    reshape(width, height);
 }

@@ -107,6 +107,7 @@ class GLFWViewer {
 
         int getWindowWidth();
         int getWindowHeight();
+        void setWindowSize(int width, int height);
 };
 
 // Set the scene position (where the camera needs to look at)

@@ -1,0 +1,25 @@
+<scene>
+    <description text="Test scene for PBF Sim"/>
+
+    <maxsimfreq max="100.0"/>
+    <duration time="120.0"/>
+    <viewport width="500" height="500" />
+    <camera cx="0.0" cy="0.0" cz="0.0"
+            fov="45"
+            />
+
+    <stepper dt="0.01"/>
+
+    <fluidsimplegravityforce fx="0" fy="-1.0" fz="0.0"/>
+
+    <!-- boundaries here... -->
+
+    <fluid mass="1000" p0="100000" h="1.5" iters="3" minneighbors="3" maxneighbors="10">
+
+        <fluidblock numparticles="10000"
+                    xmin="0" ymin="0" xmax="10" ymax="10"
+                    random="true" r="1.0" g="1.0" b="1.0"/>
+
+    </fluid>
+
+</scene>

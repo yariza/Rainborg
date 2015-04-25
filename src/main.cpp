@@ -236,13 +236,14 @@ int main(int args, char **argv)
     // Wow this is going to be my terrible, terrible 'test' function thing
     // testBasicSetup();
 
-
-
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
 
 
     loadScene(g_xml_scene_file);
+
+    std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
+    std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
 
     if (g_rendering_enabled)
         g_viewer->mainLoop();

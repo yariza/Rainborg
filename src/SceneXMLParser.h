@@ -21,9 +21,19 @@ public:
                         openglframework::Color& bgcolor,
                         std::string& description);
 
+    void loadMaxTime(rapidxml::xml_node<>* node, scalar& max_t);
+    void loadMaxSimFrequency( rapidxml::xml_node<>* node, scalar& max_freq );
+
+    void loadBackgroundColor( rapidxml::xml_node<>* node, openglframework::Color& color );
+    void loadSceneDescriptionString( rapidxml::xml_node<>* node, std::string& description_string );
+
+    void loadViewport(rapidxml::xml_node<> *node, openglframework::GLFWViewer* viewer);
+    void loadCamera(rapidxml::xml_node<> *node, openglframework::GLFWViewer* viewer);
+
+    void loadFluids(rapidxml::xml_node<>* node, Scene& scene);
 
     void loadXMLFile( const std::string& filename, std::vector<char>& xmlchars, rapidxml::xml_document<>& doc );
-    void loadTextFileIntoString( const std::string& filename, std::string& filecontents );
+    bool loadTextFileIntoString( const std::string& filename, std::string& filecontents );
 };
 
 #endif
