@@ -15,11 +15,11 @@ typedef glm::vec3 Vector3s;
 typedef glm::vec4 Vector4s;
 
 #define NUM_PARTICLES 3000
-#define MAX_NEIGHBORS 300
+#define MAX_NEIGHBORS 100
 #define MIN_NEIGHBORS 3
-#define FP_MASS 10000.0
-#define P0 100000.0
-#define H 1.5
+#define FP_MASS 50000.0
+#define P0 190000.0
+#define H 1.
 #define EPS 0.01
 #define ITERS 3
 #define GFORCE -10.0

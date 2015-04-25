@@ -171,12 +171,12 @@ void loadScene( const std::string& file_name) {
     //PLACEHOLDER
         Scene *scene = new Scene();
 
-        FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
-        scene->insertFluidForce(sgf);
+ //       FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
+        //scene->insertFluidForce(sgf);
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(3000, 10000.0, 100000.0, 1.5, 3, 300, 3);
+        Fluid *fluid = new Fluid(3000, 50000.0, 190000.0, 1., 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
