@@ -75,9 +75,10 @@ if (GPU_ENABLED)
 endif (GPU_ENABLED)
 
 if (GPU_ENABLED)
-   cuda_include_directories(${pdf_INCLUDE_DIRS})
+   include_directories(${pdf_INCLUDE_DIRS})
    cuda_add_executable(testflow ${Headers} ${Templates} ${Sources} ${CudaFiles})
 else (GPU_ENABLED)
+   include_directories(${pdf_INCLUDE_DIRS})
    add_executable ( testflow ${Headers} ${Templates} ${Sources} ${CUDA_O})
 endif (GPU_ENABLED)
 
