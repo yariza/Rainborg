@@ -269,3 +269,14 @@ void GLFWViewer::rotate(int xMouse, int yMouse) {
     }
 }
 
+int GLFWViewer::getWindowWidth() {
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    return width;
+}
+
+int GLFWViewer::getWindowHeight() {
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    return height;
+}

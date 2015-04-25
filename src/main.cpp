@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <sstream>
 #include <time.h>
 #include "Simulation.h"
 #include "FluidSimpleGravityForce.h"
@@ -15,6 +16,7 @@
 #include <openglframework.h>
 #include "Simulation.h"
 #include "TimingUtilities.h"
+#include "YImage.h"
 #include "gpu/GPUFluid.h"
 
 // callback functions for GLFW
@@ -30,6 +32,7 @@ void errorCallback(int error, const char* description);
 void initializeOpenGLandGLFW();
 void headlessSimLoop();
 void stepSystem();
+void dumpPNG(const std::string &filename);
 
 // Global variables
 Simulation* g_simulation;
@@ -54,10 +57,10 @@ std::string g_xml_scene_file;
 bool g_gpu_mode;
 
 void testBasicSetup(){
-    // I guess.... try initializing a scene? 
+    // I guess.... try initializing a scene?
 
     //initGPUFluid();
-    return; 
+    return;
 
 
     FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
@@ -67,14 +70,14 @@ void testBasicSetup(){
     scene.insertFluidForce(sgf);
     //scene.insertFluidForce(sgff);
 
-    FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10); 
+    FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10);
 
     Fluid *fluid = new Fluid(1000, 2.0, 10000.0, .5, 3, 100, 3);
 
     //fluid.setFPMass(2.0);
     //fluid.setRestDensity(1.0);
-    float x; 
-    float y; 
+    float x;
+    float y;
     float z;
     for(int i = 0; i < 1000; ++i){
         x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
@@ -86,24 +89,24 @@ void testBasicSetup(){
    //fluid->setFPPos(1, Vector3s(.2, .2, .1));
     //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
     fluid->setBoundingBox(fbox);
-    
+
     // printVec3(Vector3s(-0.3, 1, 3));
 
     std::cout << "adding fluid to scene" << std::endl;
-  
-    scene.insertFluid(fluid);    
 
-    FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1); 
-    scene.insertFluidBoundary(fbrick); 
-    
-    Stepper stepper;   
-    
+    scene.insertFluid(fluid);
+
+    FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
+    scene.insertFluidBoundary(fbrick);
+
+    Stepper stepper;
+
     stepper.stepScene(scene, .01);
 
-    //FluidBoundingBox fbox; 
+    //FluidBoundingBox fbox;
 //    std::cout << fbox.minX() << std::endl;
 
-    std::cout << "end test" << std::endl;    
+    std::cout << "end test" << std::endl;
 
 
 
@@ -111,7 +114,7 @@ void testBasicSetup(){
 
 void parseCommandLine(int argc, char **argv) {
 
-    try 
+    try
     {
       TCLAP::CmdLine cmd("Position-Based Fluid Sim");
 
@@ -143,7 +146,7 @@ void parseCommandLine(int argc, char **argv) {
       #endif
 
     }
-    catch (TCLAP::ArgException& e) 
+    catch (TCLAP::ArgException& e)
     {
       std::cerr << "error: " << e.what() << std::endl;
       exit(1);
@@ -177,8 +180,8 @@ void loadScene( const std::string& file_name) {
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
-         float x; 
-         float y; 
+         float x;
+         float y;
          float z;
          for(int i = 0; i < 3000; ++i){
              x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
@@ -191,13 +194,13 @@ void loadScene( const std::string& file_name) {
          //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
         fluid->setBoundingBox(fbox);
 
-        scene->insertFluid(fluid);    
+        scene->insertFluid(fluid);
 
-        FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1); 
-        scene->insertFluidBoundary(fbrick); 
+        FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
+        scene->insertFluidBoundary(fbrick);
 
         Stepper *stepper = new Stepper();
-        
+
         // stepper.stepScene(scene, .01);
 
         SceneRenderer *renderer = NULL;
@@ -221,10 +224,11 @@ void loadScene( const std::string& file_name) {
 
 int main(int args, char **argv)
 {
-    srand(time(NULL)); 
+    srand(time(NULL));
+    #ifdef GPU_ENABLED
     initGPUFluid();
- 
-    
+    #endif
+
     parseCommandLine(args, argv);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
@@ -248,24 +252,35 @@ int main(int args, char **argv)
 
 void stepSystem() {
 
-      // Determine if the simulation is complete
-      if( g_current_step >= g_num_steps )
-      {
+    // Determine if the simulation is complete
+    if( g_current_step >= g_num_steps )
+    {
         std::cout << outputmod::startpink << "PBF message: " << outputmod::endpink << "Simulation complete at time " << g_current_step*g_dt << ". Exiting." << std::endl;
         g_simulation_ran_to_completion = true;
+        #ifdef GPU_ENABLED
         cleanUpGPUFluid();
+        #endif
         exit(0);
-      }
+    }
 
       // Step the system forward in time
-      if(g_gpu_mode){
-        stepSystemGPUFluid(g_dt);   
-      }
-      else{
+    if(g_gpu_mode){
+        #ifdef GPU_ENABLED
+        stepSystemGPUFluid(g_dt);
+        #endif
+    }
+    else{
         g_simulation->stepSystem(g_dt);
-      }
-        std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen << (g_current_step*g_dt) << std::endl;
-      g_current_step++;
+    }
+    std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen << (g_current_step*g_dt) << std::endl;
+    g_current_step++;
+
+    #ifdef PNGOUT
+    std::stringstream oss;
+    oss << "pngs/frame" << std::setw(5) << std::setfill('0') << g_current_step << ".png";
+    dumpPNG(oss.str());
+    #endif
+
 }
 
 void headlessSimLoop() {
@@ -295,7 +310,7 @@ void idle() {
     double current_time = timingutils::seconds();
     //std::cout << "current_time: " << current_time << std::endl;
     //std::cout << "g_sec_per_frame: " << g_sec_per_frame << std::endl;
-    if( !g_paused && current_time-g_last_time >= g_sec_per_frame ) 
+    if( !g_paused && current_time-g_last_time >= g_sec_per_frame )
     {
       g_last_time = current_time;
       stepSystem();
@@ -362,3 +377,22 @@ void errorCallback(int error, const char* description)
     fputs(description, stderr);
 }
 
+void dumpPNG(const std::string &filename)
+{
+  #ifdef PNGOUT
+    YImage image;
+    image.resize(g_viewer->getWindowWidth(), g_viewer->getWindowHeight());
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+    glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+    glReadBuffer(GL_BACK);
+
+    glFinish();
+    glReadPixels(0, 0, g_viewer->getWindowWidth(), g_viewer->getWindowHeight(), GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+    image.flip();
+
+    image.save(filename.c_str());
+  #endif
+}

@@ -299,7 +299,7 @@ void stepSystemGPUFluid(scalar dt){
     
     for(int loop = 0; loop < ITERS; ++loop){
         calculatePressures();
-        calculateLambdas();
+        // calculateLambdas();
         //calculatedPos();
         //preserveOwnBoundary();
         // updateppos

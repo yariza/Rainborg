@@ -22,6 +22,7 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
     assert(m_fluid != NULL);
 
     if (g_gpu_mode) {
+      #ifdef GPU_ENABLED
         vertices = new GLfloat[4 * NUM_PARTICLES];
         indices = new GLuint[NUM_PARTICLES];
 
@@ -51,12 +52,11 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
-        #ifdef GPU_ENABLED
         //cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() );
         //cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());
         cudaGLSetGLDevice(0);
         cudaGLRegisterBufferObject(vbo);
-        #endif
+      #endif
 
     }
 }
@@ -93,7 +93,6 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
         cudaGLMapBufferObject((void**)&dptrvert, vbo);
         updateVBOGPUFluid(dptrvert); // update content inside vbo object - implement this method in kernel!
         cudaGLUnmapBufferObject(vbo);
-        #endif
 
         glEnableVertexAttribArray(position_location);
 
@@ -105,6 +104,7 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
         glDrawElements(GL_POINTS, NUM_PARTICLES, GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(position_location);
+        #endif
     }
     else {
 
