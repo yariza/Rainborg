@@ -366,8 +366,8 @@ void preserveOwnBoundary(bool update){
 
 void updatePredFromForce(scalar dt){
     int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0));
-    //updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, -10.0f, 0.f));    
-    updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, 0.0f, 0.f));    
+    updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, -10.0f, 0.f));    
+    //updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, 0.0f, 0.f));    
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
 
