@@ -5,14 +5,26 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include "gpu/GPUFluid.h"
-//#include <helper_cuda.h>
-//#include <helper_cuda_gl.h>
+#include <helper_cuda.h>
+#include <helper_cuda_gl.h>
 
 #endif
 
 using namespace openglframework;
 
 #define NUM_PARTS 100
+
+#ifdef GPU_ENABLED
+
+#define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
+static void gpuCheckError(cudaError_t err, const char *file, int line){
+    if(err != cudaSuccess){
+        fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+    }   
+}
+
+#endif
+
 
 FluidRenderer::FluidRenderer(Fluid* fluid)
 : m_fluid(fluid)
@@ -51,11 +63,13 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUM_PARTICLES*sizeof(GLuint), indices, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-
-        //cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() );
+        GPU_CHECKERROR(cudaDeviceReset());        
+        GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
         //cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());
-        cudaGLSetGLDevice(0);
-        cudaGLRegisterBufferObject(vbo);
+
+        
+        GPU_CHECKERROR(cudaGLRegisterBufferObject(vbo));
+        
       #endif
 
     }
@@ -90,9 +104,9 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
         float *dptrvert=NULL;
 
         #ifdef GPU_ENABLED
-        cudaGLMapBufferObject((void**)&dptrvert, vbo);
+        GPU_CHECKERROR(cudaGLMapBufferObject((void**)&dptrvert, vbo));
         updateVBOGPUFluid(dptrvert); // update content inside vbo object - implement this method in kernel!
-        cudaGLUnmapBufferObject(vbo);
+        GPU_CHECKERROR(cudaGLUnmapBufferObject(vbo));
 
         glEnableVertexAttribArray(position_location);
 

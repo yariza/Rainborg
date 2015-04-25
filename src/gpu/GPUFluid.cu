@@ -3,11 +3,12 @@
 
 #define BLOCKSIZE 256
 
+bool deviceHappy = false; 
+
 #define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
 static void gpuCheckError(cudaError_t err, const char *file, int line){
     if(err != cudaSuccess){
         fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString(err), file, line);
-        //exit(EXIT_FAILURE);
     }   
 }
 
@@ -15,6 +16,7 @@ static void gpuCheckError(cudaError_t err, const char *file, int line){
 __constant__ int GRIDX; 
 __constant__ int GRIDY;
 __constant__ int GRIDZ;
+__constant__ scalar QSCALE; // for artificial pressure term 
 
 Vector3s *d_pos;
 Vector3s *d_vel; 
@@ -31,7 +33,7 @@ int grid_X;
 int grid_Y;
 int grid_Z;
 
-__device__ scalar wPoly6Kernel(Vector3s pi, Vector3s pj){
+__device__ __host__ scalar wPoly6Kernel(Vector3s pi, Vector3s pj){
     scalar r = glm::distance(pi, pj); 
     if(r > H || r < 0)
         return 0; 
@@ -42,7 +44,7 @@ __device__ scalar wPoly6Kernel(Vector3s pi, Vector3s pj){
 
 }
 
-__device__ Vector3s wSpikyKernelGrad(Vector3s pi, Vector3s pj){
+__device__ __host__ Vector3s wSpikyKernelGrad(Vector3s pi, Vector3s pj){
     Vector3s dp = pi - pj; 
     scalar r = glm::length(dp);  
     if(r > H || r < 0)
@@ -152,7 +154,7 @@ __global__ void preserveFluidBoundaryWithUpdate(Vector3s* d_pos, Vector3s* d_ppo
     }
 }
 
-__global__ void preserveFluidBoundary(Vector3s* d_pos, Vector3s* d_ppos, Vector3s* d_dpos){
+__global__ void preserveFluidBoundary(Vector3s *d_pos, Vector3s *d_ppos, Vector3s *d_dpos){
     int i = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(i > NUM_PARTICLES){
         return;
@@ -181,7 +183,7 @@ __global__ void preserveFluidBoundary(Vector3s* d_pos, Vector3s* d_ppos, Vector3
     }
 }
 
-__global__ void buildGrid(Vector3s* d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd){
+__global__ void buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd){
     int id = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(id > NUM_PARTICLES){
         return;
@@ -205,7 +207,7 @@ __global__ void buildGrid(Vector3s* d_ppos, int *d_grid, int *d_gridCount, int *
     atomicAdd(&d_gridCount[gid], 1);
 }
 
-__global__ void calcPressures(Vector3s* d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc){
+__global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(p > NUM_PARTICLES){
         return;
@@ -262,7 +264,7 @@ __global__ void calcLambdas(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int
     d_lambda[p] = top / (gradSum + EPS);
 } 
  
-__global__ void calcdPos(Vector3s *d_ppos, Vector3s* d_dpos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_lambda){
+__global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_lambda){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(p > NUM_PARTICLES)
         return;
@@ -272,14 +274,24 @@ __global__ void calcdPos(Vector3s *d_ppos, Vector3s* d_dpos, int *d_grid, int *d
     int gi = 0;
     scalar plambda = d_lambda[p]; 
     Vector3s pi = d_ppos[p];
+    Vector3s pj; 
+
     scalar scorr = 0; // bla 
+
     for(int i = max(0, d_gridInd[p*3]-1); i <= min(GRIDX-1, d_gridInd[p*3]+1); ++i){
         for(int j = max(0, d_gridInd[p*3+1]-1); j <= min(GRIDY-1, d_gridInd[p*3+1]+1); ++j){
             for(int k = max(0, d_gridInd[p*3+2]-1); k <= min(GRIDZ-1, d_gridInd[p*3+2]+1); ++k){
                 gi = get1DGridIdx(i, j, k);
                 for(int n = 0; n < d_gridCount[gi]; ++n){ // for all particles in the grid
                     q = d_grid[gi * MAX_NEIGHBORS + n];
-                    dp += (plambda + d_lambda[q] + scorr) * wSpikyKernelGrad(pi, d_ppos[q]);
+                    pj = d_ppos[q];                
+    
+                #ifdef ART_PRESSURE
+                    scalar top = wPoly6Kernel(pi, pj); 
+                    scorr = - K * (pow(top / QSCALE, N)); 
+                #endif
+
+                    dp += (plambda + d_lambda[q] + scorr) * wSpikyKernelGrad(pi, pj);
                 }
             }
         }
@@ -294,6 +306,35 @@ __global__ void updateForReals(Vector3s* d_pos, Vector3s* d_vel, Vector3s* d_ppo
         d_vel[id] = (d_ppos[id] - d_pos[id])/dt;
         d_pos[id] = d_ppos[id];
     }
+}
+
+__global__ void updateXSPH(Vector3s *d_pos, Vector3s *d_vel, int *d_grid, int *d_gridCount, int *d_gridInd){
+    int p = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(p > NUM_PARTICLES)
+        return;
+    
+    Vector3s dv(0.0, 0.0, 0.0);
+    Vector3s vi = d_vel[p];
+    Vector3s pi = d_pos[p];
+    int gi; 
+    int q; 
+    Vector3s vij;
+    
+
+    for(int i = max(0, d_gridInd[p*3]-1); i <= min(GRIDX-1, d_gridInd[p*3]+1); ++i){
+        for(int j = max(0, d_gridInd[p*3+1]-1); j <= min(GRIDY-1, d_gridInd[p*3+1]+1); ++j){
+            for(int k = max(0, d_gridInd[p*3+2]-1); k <= min(GRIDZ-1, d_gridInd[p*3+2]+1); ++k){
+                gi = get1DGridIdx(i, j, k);
+                for(int n = 0; n < d_gridCount[gi]; ++n){ // for all particles in the grid
+                    q = d_grid[gi * MAX_NEIGHBORS + n];
+                    vij = vi - d_vel[q];
+                    dv += vij * wPoly6Kernel(pi, d_pos[q]);              
+                }
+            }
+        }
+    }
+    dv *= C;
+    d_vel[p] += dv; 
 }
 
 void initGPUFluid(){
@@ -320,6 +361,12 @@ void initGPUFluid(){
     GPU_CHECKERROR(cudaMalloc((void **)&d_gridInd, 3 * NUM_PARTICLES * sizeof(int)));
 
     GPU_CHECKERROR(cudaMemset((void *)d_vel, 0, NUM_PARTICLES * sizeof(Vector3s)));
+
+    Vector3s dq(H, 0, 0);
+    dq *= (scalar)DQ;
+    scalar q_scale = wPoly6Kernel(Vector3s(0, 0, 0), dq);
+    GPU_CHECKERROR(cudaMemcpyToSymbol(QSCALE, &q_scale, sizeof(scalar)));
+
 
     /*
     curandState *state;
@@ -434,7 +481,22 @@ void applydPToPredPos(){
     GPU_CHECKERROR(cudaThreadSynchronize());
 }
 
+void adjustVel(){
+    #ifndef XSPH
+    return;
+    #endif
+    return;
+
+    int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0)); 
+    updateXSPH<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_grid, d_gridCount, d_gridInd); 
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
+}
+
 void stepSystemGPUFluid(scalar dt){
+    if(!deviceHappy)
+        return;
+
     updatePredFromForce(dt);    
 
     GPU_CHECKERROR(cudaMemset((void *)d_dpos, 0, NUM_PARTICLES * sizeof(Vector3s)));
@@ -451,7 +513,7 @@ void stepSystemGPUFluid(scalar dt){
     }
     
     updateValForReals(dt); 
-
+    adjustVel();
 }
 
 
@@ -459,7 +521,17 @@ void stepSystemGPUFluid(scalar dt){
 void updateVBOGPUFluid(float *vboptr){
     int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0)); 
     sendToVBO<<<gridSize, BLOCKSIZE>>>(vboptr, d_pos);  
-    GPU_CHECKERROR(cudaGetLastError());
+
+    cudaError_t err = cudaGetLastError();
+    if(err != cudaSuccess){
+        deviceHappy = false;
+        fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString(err), __FILE__, __LINE__);
+        std::cout << "vboptr: " << vboptr << std::endl;
+        return;
+    }
+    else{
+        deviceHappy = true;
+    }
     // Is sad the first call, then fine
     GPU_CHECKERROR(cudaThreadSynchronize());
 

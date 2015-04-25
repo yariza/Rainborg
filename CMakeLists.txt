@@ -72,6 +72,7 @@ if (GPU_ENABLED)
     #cuda_compile(CUDA_O ${CudaFiles})
     # add def for program to check
     add_definitions(-DGPU_ENABLED)
+    set( pdf_INCLUDE_DIRS ${pdf_INCLUDE_DIRS} ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc)
 endif (GPU_ENABLED)
 
 if (GPU_ENABLED)
