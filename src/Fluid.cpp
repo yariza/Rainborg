@@ -237,47 +237,20 @@ const FluidBoundingBox& Fluid::getBoundingBox() const{
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
     std::cout << "step" << std::endl;
-    //std::cout << "pos: " << std::endl;
-    for(int i = 0; i < m_numParticles; ++i){
-        //printVec3(m_pos[i]); 
-    }
 
     accumulateForce(scene); // makes more sense 
-    // Print force: 
-    //std::cout << "forces: " << std::endl;
-    for(int i = 0; i < m_numParticles; ++i){
-        //printVec3(m_accumForce[i]); 
-    } 
 
-    //std::cout << "vel: " << std::endl;
     updateVelocityFromForce(dt); 
-    for(int i = 0; i < m_numParticles; ++i){
-        //printVec3(m_vel[i]); 
-    }
-
-    //std::cout << "ppos: " << std::endl;
-    updatePredPosition(dt); 
-    for(int i = 0; i < m_numParticles; ++i){
-        //printVec3(m_ppos[i]);
-    }
-
-
-    // find neighbors for each particle 
-    std::cout << "building grid" << std::endl;
-
-    // make sure that predicted positions don't go out of bounds here
     
+    updatePredPosition(dt); 
+
+    // make sure that predicted positions don't go out of bounds here 
     memset(m_dpos, 0, m_numParticles * sizeof(Vector3s)); 
     preserveOwnBoundary(); 
     
     applydPToPredPos();
-    
-    //recalculateVelocity(dt); 
-    //updateFinalPosition();
-    //return; 
-
-
-
+     
+    std::cout << "building grid" << std::endl;  
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
     // loop for solve iterations
@@ -298,11 +271,6 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
         std::cout << "own boundary" << std::endl;
         preserveOwnBoundary(); 
 
-        for(int i = 0; i < m_numParticles; ++i){
-            //std::cout << "  dpos:   "; 
-            //printVec3(m_dpos[i]); 
-        }
-
         // Update predicted position with dP
         std::cout << "applying dpos to ppos" << std::endl;
         applydPToPredPos(); 
@@ -314,28 +282,11 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     recalculateVelocity(dt); 
     //std::cout << "new vel: " << std::endl;
     //updateVelocityFromForce(dt);  // Yeah no this shouldn't be here
-    for(int i = 0; i < m_numParticles; ++i){
-        //printVec3(m_vel[i]); 
-    }
 
     // Apply vorticity confinement and XSPH viscosity
 
     std::cout << "updating final positions" << std::endl;
     updateFinalPosition(); 
-
-    // Why IS THIS HERE??? 
-    /*
-    //std::cout << "final pos: " << std::endl;
-    std::cout << "updating velocity from force" << std::endl;
-    updateVelocityFromForce(dt); 
-    int x, y, z;
-    for(int i = 0; i < m_numParticles; ++i){
-        //std::cout << i << std::endl;
-        //getGridIdx(m_pos[i], x, y, z);
-
-
-    }
-    */
 
     std::cout << "end step system" << std::endl;
 }
@@ -362,15 +313,6 @@ void Fluid::calculatePressures(){
                         //printVec3(m_ppos[p]); 
                         //printVec3(m_ppos[m_grid[gi] * m_maxNeighbors + n]);
                         scalar pressN = wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
-                        if(p == 700 || pressN > 1000000 || pressN < -1000000){
-                        //if(p == 700 || pressN > 1000000 || pressN < -1000000){
-                            //std::cout << "pressure add: " << pressN << std::endl;
-                            //std::cout << "m_ppos[p] "; 
-                            //printVec3(m_ppos[p]);
-                            //std::cout << "m_ppos[q] ";
-                            //printVec3(m_ppos[m_grid[gi * m_maxNeighbors + n]]);  
-                        }
-                        //}
                         press += pressN;
                         //press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
                         if(pressN > 0)
@@ -385,16 +327,12 @@ void Fluid::calculatePressures(){
             m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
         
         //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
-    
-        if(press > 1000000 || press < -100000){
-            std::cout << "pressure : " << press << std::endl;
-            std::cout << "had " << ncount << " neighbors" << std::endl;
-        }
-
+   
         if(p == 700){
             std::cout << "arb count: " << ncount << std::endl;
             std::cout << "arb press: " << m_fpmass * press << std::endl;
         }
+    
 
     }
     //std::cout << "ending Pressure calculations" << std::endl;
@@ -532,36 +470,9 @@ int Fluid::getGridIdx(int i, int j, int k){
     return (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
 }
 
-//void Fluid::getGridIdx(scalar x, scalar y, scalar z, int& idx){
-//    // in our case...
-//    int i = (x - m_boundingBox.minX())/m_h; 
-//    int j = (y - m_boundingBox.minY())/m_h;
-//    int k = (z - m_boundingBox.minZ())/m_h; 
-
-//  idx = (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
-//}
-
 void Fluid::clearGrid(){
     memset(m_grid, -1, m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int));
     memset(m_gridCount, 0,  m_gridX * m_gridY * m_gridZ * sizeof(int)); 
-
-    /*
-    for(int i= 0; i < m_gridX * m_gridY * m_gridZ; ++i){
-        if(m_gridCount[i] != 0){
-            std::cout << "count not 0" << std::endl;
-        }
-        for(int j = 0; j < m_maxNeighbors; ++j){
-            if(m_grid[i*m_maxNeighbors + j] != -1){
-                std::cout << "not -1" << std::endl;
-            }
-        }
-    }
-    */
-    //    std::cout << m_boundingBox.minX() << ": " << m_boundingBox.maxX() << std::endl;
-    //    std::cout << m_h << std::endl;
-    //    std::cout << m_gridX * m_gridY * m_gridZ << std::endl;
-    //    std::cout << m_grid[2] << std::endl;
-    //    std::cout << m_gridCount[3] << std::endl;
 }
 
 
@@ -574,35 +485,17 @@ void Fluid::buildGrid(){
     for(int i= 0; i < m_numParticles; ++i){
         //getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
         getGridIdx(m_ppos[i], m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); // which grid location am I in 
-        //std::cout << "particle " << i << " pos: "; 
-        //printVec3(m_ppos[i]); 
-        //std::cout << "  grid: " << m_gridInd[i*3] << ", " << m_gridInd[i*3+1] << ", " << m_gridInd[i*3+2] << std::endl;
-        //std::cin.get(); 
-    }
+     }
 
-    //std::cout << "got all grid idx" << std::endl;
     // zero things out
     clearGrid(); 
-    //std::cout << "cleared grid" << std::endl;
 
-    /*
-    for(int i = 0; i < m_gridX * m_gridY * m_gridZ; ++i){
-        if(m_gridCount[i] < 0)
-            std::cout << i << " has negative count" << std::endl;
-    }
-*/
     // Build list of grid particles
     int gind; 
     for(int i = 0; i < m_numParticles; ++i){
-        //std::cout << "grid: " << m_gridInd[i*3] << ", " << m_gridInd[i*3+1] << ", " << m_gridInd[i*3+2] << std::endl;
         gind = getGridIdx(m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
-        //std::cout << gind << std::endl;
-        //std::cout << " bounds: " << m_gridX << ", " << m_gridY << ", " << m_gridZ << std::endl;
-        //gind = m_gridInd[i];
-        //std::cout << m_gridCount[gind] << " vs limit of " << m_maxNeighbors << std::endl;
         m_grid[gind * m_maxNeighbors + m_gridCount[gind]] = i; 
         m_gridCount[gind] ++; 
-        //std::cout << "grid: " << gind << " has " << m_gridCount[gind] << " particles" << std::endl;
     }
 
 }
@@ -631,11 +524,9 @@ void Fluid::updateFinalPosition(){
 }
 
 void Fluid::applydPToPredPos(){
-    bool broke = false; 
     for(int i = 0; i < m_numParticles; ++i){
         m_ppos[i] += m_dpos[i]; 
         if(glm::length(m_dpos[i]) > 5.0){
-            broke = true;
             std::cout << "huge update at " << i << std::endl;
             std::cout << "  pressure: " << m_pcalc[i] << std::endl;
             std::cout << "  lambda: " << m_lambda[i] << std::endl;
@@ -643,9 +534,6 @@ void Fluid::applydPToPredPos(){
             std::cout << "  grid count: " << m_gridCount[m_gridInd[i]] << std::endl;
 
         }
-    }
-    if(!broke){
-        std::cout << "arbitrary pressure: " << m_pcalc[700] << std::endl;
     }
 }
 

@@ -299,7 +299,7 @@ void stepSystemGPUFluid(scalar dt){
     
     for(int loop = 0; loop < ITERS; ++loop){
         calculatePressures();
-        // calculateLambdas();
+        //calculateLambdas();
         //calculatedPos();
         //preserveOwnBoundary();
         // updateppos
@@ -314,7 +314,7 @@ void stepSystemGPUFluid(scalar dt){
 void updateVBOGPUFluid(float *vboptr){
     int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0)); 
     sendToVBO<<<gridSize, BLOCKSIZE>>>(vboptr, d_pos);  
-    //GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaGetLastError());
     // Is sad the first call, then fine
     GPU_CHECKERROR(cudaThreadSynchronize());
 
