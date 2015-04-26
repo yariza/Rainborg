@@ -28,6 +28,8 @@ typedef glm::vec4 Vector4s;
 #define K 1.5
 #define XSPH 0
 #define C .0001
+#define VORTICITY 0
+#define VORT_EPS .01
 #define GFORCE -10.0
 #define XMIN -5.0
 #define XMAX 10.0

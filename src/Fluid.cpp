@@ -442,7 +442,7 @@ void Fluid::accumulateForce(Scene& scene){
 
     // F *= -1.0/mass
     for(int i = 0; i < m_numParticles; ++i){
-        m_accumForce[i] /= -m_fpmass; 
+        m_accumForce[i] /= -1; 
         //m_accumForce[i*3] /= -m_fpmass; 
         //m_accumForce[i*3+1] /= -m_fpmass;
         //m_accumForce[i*3+2] /= -m_fpmass;
@@ -451,7 +451,7 @@ void Fluid::accumulateForce(Scene& scene){
 
 void Fluid::updateVelocityFromForce(scalar dt){
     for(int i = 0; i < m_numParticles; ++i){
-        m_vel[i] += m_accumForce[i] * dt; 
+        m_vel[i] += m_accumForce[i]/m_fpmass * dt; 
     }    
 }
 
