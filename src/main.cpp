@@ -267,7 +267,9 @@ int main(int args, char **argv)
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
 
+    #ifdef GPU_ENABLED
     GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
+    #endif
  
 
     loadScene(g_xml_scene_file);
