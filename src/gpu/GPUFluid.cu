@@ -123,7 +123,7 @@ __global__ void applydPToPPos(Vector3s* d_ppos, Vector3s* d_dpos){
 
 __global__ void preserveFluidBoundaryWithUpdate(Vector3s* d_pos, Vector3s* d_ppos, Vector3s* d_dpos){
     int i = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(i > NUM_PARTICLES){
+    if(i >= NUM_PARTICLES){
         return;
     }
     scalar pposX = d_ppos[i][0] + d_dpos[i][0];
@@ -158,7 +158,7 @@ __global__ void preserveFluidBoundaryWithUpdate(Vector3s* d_pos, Vector3s* d_ppo
 
 __global__ void preserveFluidBoundary(Vector3s *d_pos, Vector3s *d_ppos, Vector3s *d_dpos){
     int i = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(i > NUM_PARTICLES){
+    if(i >= NUM_PARTICLES){
         return;
     }
     scalar pposX = d_ppos[i][0] + d_dpos[i][0];
@@ -187,7 +187,7 @@ __global__ void preserveFluidBoundary(Vector3s *d_pos, Vector3s *d_ppos, Vector3
 
 __global__ void buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd){
     int id = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(id > NUM_PARTICLES){
+    if(id >= NUM_PARTICLES){
         return;
     }
     
@@ -218,7 +218,7 @@ __global__ void buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *
 
 __global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(p > NUM_PARTICLES){
+    if(p >= NUM_PARTICLES){
         return;
     }
     scalar press = 0;
@@ -247,7 +247,7 @@ __global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, i
 
 __global__ void calcLambdas(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc, scalar *d_lambda){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(p > NUM_PARTICLES)
+    if(p >= NUM_PARTICLES)
         return;
 
     scalar top = -(d_pcalc[p]/P0 - 1.0);
@@ -275,7 +275,7 @@ __global__ void calcLambdas(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int
  
 __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_lambda){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(p > NUM_PARTICLES)
+    if(p >= NUM_PARTICLES)
         return;
 
     Vector3s dp(0.0, 0.0, 0.0);
@@ -295,7 +295,7 @@ __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d
                     q = d_grid[gi * MAX_NEIGHBORS + n];
                     pj = d_ppos[q];                
     
-                #ifdef ART_PRESSURE
+                #if ART_PRESSURE > 0
                     scalar top = wPoly6Kernel(pi, pj); 
                     scorr = - K * (pow(top / QSCALE, N)); 
                 #endif
@@ -319,7 +319,7 @@ __global__ void updateForReals(Vector3s* d_pos, Vector3s* d_vel, Vector3s* d_ppo
 
 __global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(p > NUM_PARTICLES)
+    if(p >= NUM_PARTICLES)
         return;
     
     Vector3s dv(0.0, 0.0, 0.0);
@@ -330,7 +330,7 @@ __global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d
     int q; 
     Vector3s vij;
 
-    #ifdef VORTICITY
+    #if VORTICITY > 0
     Vector3s omega(0.0, 0.0, 0.0); 
     #endif
     
@@ -345,16 +345,17 @@ __global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d
                     pj = d_pos[q]; 
                     dv += vij * wPoly6Kernel(pi, pj);    
 
-                    #ifdef VORTICITY
+                    #if VORTICITY > 0
                     omega += glm::cross(vij, wSpikyKernelGrad(pi, pj)); 
                     #endif          
                 }
             }
         }
     }
+
     dv *= C;
     d_vel[p] += dv; 
-    #ifdef VORTICITY
+    #if VORTICITY > 0
     d_omega[p] = omega;
     #endif
 }
@@ -362,9 +363,10 @@ __global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d
 
 __global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar dt){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if(p > NUM_PARTICLES)
+    if(p >= NUM_PARTICLES)
         return;
 
+    /*
     Vector3s pi = d_pos[p];
     Vector3s pj; 
     Vector3s omega = d_omega[p]; 
@@ -391,9 +393,9 @@ __global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ome
             }
         }
     }
-    vort /= (glm::length(N) + EPS);     
-    d_vel[p] += (scalar)(dt * VORT_EPS / FP_MASS) * (glm::cross(vort, omega)); 
-
+    vort /= (glm::length(vort) + EPS);     
+    //d_vel[p] += (scalar)(dt * VORT_EPS / FP_MASS) * (glm::cross(vort, omega)); 
+*/
 }
 
 
@@ -408,7 +410,7 @@ void initGPUFluid(){
     GPU_CHECKERROR(cudaMalloc((void **)&d_dpos, NUM_PARTICLES * sizeof(Vector3s)));
     GPU_CHECKERROR(cudaMalloc((void **)&d_pcalc, NUM_PARTICLES * sizeof(scalar)));
     GPU_CHECKERROR(cudaMalloc((void **)&d_lambda, NUM_PARTICLES * sizeof(scalar)));
-    #ifdef VORTICITY
+    #if VORTICITY > 0 
     GPU_CHECKERROR(cudaMalloc((void **)&d_omega, NUM_PARTICLES * sizeof(Vector3s))); 
     #endif
 
@@ -547,7 +549,7 @@ void applydPToPredPos(){
 }
 
 void adjustVel(scalar dt){
-    #ifndef XSPH
+    #if XSPH == 0
     return;
     #endif
 
@@ -556,7 +558,7 @@ void adjustVel(scalar dt){
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
     
-    #ifndef VORTICITY
+    #if VORTICITY == 0
     return;
     #endif
  
@@ -575,6 +577,7 @@ void stepSystemGPUFluid(scalar dt){
 
     GPU_CHECKERROR(cudaMemset((void *)d_dpos, 0, NUM_PARTICLES * sizeof(Vector3s)));
     preserveOwnBoundary(true); 
+    
     
     buildGrid(); 
     
@@ -624,7 +627,7 @@ void cleanUpGPUFluid(){
     GPU_CHECKERROR(cudaFree(d_gridCount));
     GPU_CHECKERROR(cudaFree(d_gridInd));
         
-    #ifdef VORTICITY
+    #if VORTICITY > 0
     GPU_CHECKERROR(cudaFree(d_omega));
     #endif
 

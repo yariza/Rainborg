@@ -64,7 +64,7 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         //GPU_CHECKERROR(cudaDeviceReset());        
-        GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
+        //GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
         //cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());
 
         
