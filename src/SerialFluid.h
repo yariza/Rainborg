@@ -34,7 +34,6 @@ public:
     virtual Vector3s* getFPPos() const;
     virtual Vector3s* getFPVel() const; 
     virtual Vector4s* getColors() const;
-    virtual const FluidBoundingBox& getBoundingBox() const;
 
 private: 
 
@@ -88,7 +87,6 @@ private:
     //scalar *m_accumForce; 
     Vector3s *m_accumForce;
 
-    FluidBoundingBox m_boundingBox; 
 
     // Colors? 
     Vector4s *m_colors;     

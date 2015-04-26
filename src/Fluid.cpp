@@ -19,6 +19,7 @@ Fluid::Fluid(const Fluid& otherFluid) {
     m_maxNeighbors = otherFluid.m_maxNeighbors;
     m_minNeighbors = otherFluid.m_minNeighbors;
     m_volumes = otherFluid.m_volumes;
+    m_boundingBox = otherFluid.m_boundingBox;
 }
 
 Fluid::~Fluid()
@@ -74,3 +75,10 @@ void Fluid::insertFluidVolume(FluidVolume& volume) {
     m_volumes.push_back(volume);
 }
 
+void Fluid::setBoundingBox(FluidBoundingBox& bound){
+    m_boundingBox = bound;
+}
+
+const FluidBoundingBox& Fluid::getBoundingBox() const{
+    return m_boundingBox;
+}

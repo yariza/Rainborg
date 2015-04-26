@@ -46,10 +46,6 @@ SerialFluid::SerialFluid(const SerialFluid& otherFluid)
 : Fluid(otherFluid)
 , m_eps(.01)
 {
-    m_h = otherFluid.getKernelH(); 
-    m_iters = otherFluid.getNumIterations(); 
-    m_maxNeighbors = otherFluid.getMaxNeighbors();
-    m_minNeighbors = otherFluid.getMinNeighbors(); 
 
     // loadFluidVolumes is necessary to reallocate stuff again
 
@@ -90,8 +86,6 @@ SerialFluid::SerialFluid(const SerialFluid& otherFluid)
     // memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * sizeof(Vector3s)); 
     // memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * sizeof(Vector3s)); 
     // memcpy(m_colors, otherFluid.getColors(), m_numParticles * sizeof(Vector4s)); 
-
-    m_boundingBox = otherFluid.getBoundingBox(); 
 
     m_gridX = ceil(m_boundingBox.width()/m_h);
     m_gridY = ceil(m_boundingBox.height()/m_h);
@@ -143,10 +137,8 @@ void SerialFluid::setFPVel(int fp, const Vector3s& vel){
     //    m_vel[fp*3+2] = vel[2];
 }
 
-
-
 void SerialFluid::setBoundingBox(FluidBoundingBox& bound){
-    m_boundingBox = bound; 
+    Fluid::setBoundingBox(bound);
 
     if(m_grid != NULL)
         free(m_grid);
@@ -195,11 +187,6 @@ Vector3s* SerialFluid::getFPVel() const{
 Vector4s* SerialFluid::getColors() const{
     return m_colors; 
 }
-
-const FluidBoundingBox& SerialFluid::getBoundingBox() const{
-    return m_boundingBox;
-}
-
 
 void SerialFluid::loadFluidVolumes() {
 
