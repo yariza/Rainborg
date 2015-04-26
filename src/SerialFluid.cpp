@@ -2,14 +2,8 @@
 #include "Scene.h"
 
 SerialFluid::SerialFluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors)
-: m_fpmass(mass)
-, m_p0(p0)
-, m_h(h)
-, m_iters(iters)
-, m_maxNeighbors(maxNeighbors)
-, m_minNeighbors(minNeighbors)
+: Fluid(mass, p0, h, iters, maxNeighbors, minNeighbors)
 , m_eps(.01) // wow this is terrible
-, m_volumes()
 {
     // Allocate memory for m_pos, m_ppos, m_vel, m_accumForce? 
 
@@ -49,10 +43,9 @@ SerialFluid::SerialFluid(scalar mass, scalar p0, scalar h, int iters, int maxNei
 
 
 SerialFluid::SerialFluid(const SerialFluid& otherFluid)
-: m_eps(.01)
+: Fluid(otherFluid)
+, m_eps(.01)
 {
-    m_fpmass = otherFluid.getFPMass();
-    m_p0 = otherFluid.getRestDensity();
     m_h = otherFluid.getKernelH(); 
     m_iters = otherFluid.getNumIterations(); 
     m_maxNeighbors = otherFluid.getMaxNeighbors();
@@ -129,14 +122,6 @@ SerialFluid::~SerialFluid(){
         free(m_gridCount);
 }
 
-void SerialFluid::setFPMass(scalar fpm){
-    assert(fpm > 0); 
-    m_fpmass = fpm;
-}
-
-void SerialFluid::setRestDensity(scalar p0){
-    m_p0 = p0;
-}
 
 // use fluid volumes instead
 // void SerialFluid::setFPPos(int fp, const Vector3s& pos){
@@ -158,13 +143,7 @@ void SerialFluid::setFPVel(int fp, const Vector3s& vel){
     //    m_vel[fp*3+2] = vel[2];
 }
 
-void SerialFluid::setKernelH(scalar h){
-    m_h = h; 
-}
 
-void SerialFluid::setNumIterations(int iter){
-    m_iters = iter;
-}
 
 void SerialFluid::setBoundingBox(FluidBoundingBox& bound){
     m_boundingBox = bound; 
@@ -188,18 +167,6 @@ void SerialFluid::setColor(int i, const Vector4s& col){
     m_colors[i] = col; 
 }
 
-void SerialFluid::insertFluidVolume(FluidVolume& volume) {
-    m_volumes.push_back(volume);
-}
-
-int SerialFluid::getMaxNeighbors() const{
-    return m_maxNeighbors;
-}
-
-int SerialFluid::getMinNeighbors() const{
-    return m_minNeighbors;
-}
-
 int SerialFluid::getNumParticles() const{
     int numParticles = 0;
     for (std::vector<FluidVolume>::size_type i=0; i<m_volumes.size(); i++) {
@@ -208,23 +175,6 @@ int SerialFluid::getNumParticles() const{
     }
     return numParticles;
 }
-
-scalar SerialFluid::getFPMass() const{
-    return m_fpmass;
-}
-
-scalar SerialFluid::getRestDensity() const{
-    return m_p0;
-}
-
-scalar SerialFluid::getKernelH() const{
-    return m_h;
-}
-
-int SerialFluid::getNumIterations() const{
-    return m_iters;
-}
-
 
 //scalar* SerialFluid::getFPPos() const{
 //    return m_pos;
@@ -250,9 +200,6 @@ const FluidBoundingBox& SerialFluid::getBoundingBox() const{
     return m_boundingBox;
 }
 
-const std::vector<FluidVolume>& SerialFluid::getFluidVolumes() const {
-    return m_volumes;
-}
 
 void SerialFluid::loadFluidVolumes() {
 

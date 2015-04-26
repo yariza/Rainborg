@@ -11,31 +11,42 @@ class Scene;
 class Fluid {
 
 public:
+    Fluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors);
+    Fluid(const Fluid& otherFluid);
     virtual ~Fluid();
 
     virtual void stepSystem(Scene& scene, scalar dt) = 0;
 
     virtual void loadFluidVolumes() = 0;
 
-    virtual void setFPMass(scalar fpm) = 0;
-    virtual void setRestDensity(scalar p0) = 0;
-    virtual void setKernelH(scalar h) = 0;
-    virtual void setNumIterations(int iter) = 0;
+    virtual void setFPMass(scalar fpm);
+    virtual void setRestDensity(scalar p0);
+    virtual void setKernelH(scalar h);
+    virtual void setNumIterations(int iter);
     virtual void setBoundingBox(FluidBoundingBox& newBound) = 0;
 
-    virtual void insertFluidVolume(FluidVolume& volume) = 0;
+    virtual void insertFluidVolume(FluidVolume& volume);
 
     virtual int getNumParticles() const = 0;
-    virtual int getNumIterations() const = 0;
-    virtual int getMaxNeighbors() const = 0;
-    virtual int getMinNeighbors() const = 0;
-    virtual scalar getFPMass() const = 0;
-    virtual scalar getRestDensity() const = 0;
-    virtual scalar getKernelH() const = 0;
+    virtual int getNumIterations() const;
+    virtual int getMaxNeighbors() const;
+    virtual int getMinNeighbors() const;
+    virtual scalar getFPMass() const;
+    virtual scalar getRestDensity() const;
+    virtual scalar getKernelH() const;
     virtual const FluidBoundingBox& getBoundingBox() const = 0;
-    virtual const std::vector<FluidVolume>& getFluidVolumes() const = 0;
+    virtual const std::vector<FluidVolume>& getFluidVolumes() const;
 
 protected:
+
+    scalar m_fpmass;
+    scalar m_p0;
+    scalar m_h;
+    int m_iters;
+    int m_maxNeighbors;
+    int m_minNeighbors;
+
+    std::vector<FluidVolume> m_volumes;
 
 };
 
