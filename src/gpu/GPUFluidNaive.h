@@ -14,17 +14,17 @@ typedef float scalar;
 typedef glm::vec3 Vector3s;
 typedef glm::vec4 Vector4s;
 
-#define NUM_PARTICLES 10000
+#define NUM_PARTICLES 50000
 #define MAX_NEIGHBORS 300
 #define MIN_NEIGHBORS 3
-#define FP_MASS 10000.0
+#define FP_MASS 5000.0
 #define P0 240000.0
-#define H .5
+#define H .75
 #define EPS 0.01
 #define ITERS 3
 #define ART_PRESSURE 1
 #define N 4
-#define DQ .2
+#define DQ .3
 #define K 1.5
 #define XSPH 1
 #define C .0001
