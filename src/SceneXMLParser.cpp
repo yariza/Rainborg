@@ -30,6 +30,7 @@ void SceneXMLParser::loadSimulation(const std::string& file_name,
     loadMaxSimFrequency(node, steps_per_sec_cap);
     loadCamera(node, viewer);
     loadViewport(node, viewer);
+    loadStepper(node, dt);
     loadBackgroundColor(node, bgcolor);
     loadSceneDescriptionString(node, description);
 
@@ -231,7 +232,7 @@ void SceneXMLParser::loadCamera(rapidxml::xml_node<> *node, openglframework::GLF
         }
         else {
             std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
-                      << "rotx attribute for camera not specified. Using default values." << std::endl;
+                      << "roty attribute for camera not specified. Using default values." << std::endl;
             cameraRotationSpecified = false;
         }
 
@@ -245,7 +246,7 @@ void SceneXMLParser::loadCamera(rapidxml::xml_node<> *node, openglframework::GLF
         }
         else {
             std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
-                      << "rotx attribute for camera not specified. Using default values." << std::endl;
+                      << "rotz attribute for camera not specified. Using default values." << std::endl;
             cameraRotationSpecified = false;
         }
     }
@@ -267,6 +268,38 @@ void SceneXMLParser::loadCamera(rapidxml::xml_node<> *node, openglframework::GLF
         openglframework::Vector3 center(0.0, 0.0, 0.0);
 
         viewer->setScenePosition(center, radius);
+    }
+}
+
+void SceneXMLParser::loadStepper(rapidxml::xml_node<>* node, scalar& dt) {
+
+    assert(node != NULL);
+
+    dt = -1.0;
+
+    rapidxml::xml_node<>* nd = node->first_node("stepper");
+    if( nd == NULL )
+    {
+        std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "No stepper specified. Exiting." << std::endl;
+        exit(1);
+    }
+
+    // Attempt to load the duration value
+    rapidxml::xml_attribute<>* timend = nd->first_attribute("dt");
+    if( timend == NULL )
+    {
+        std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "No stepper 'dt' attribute specified. Exiting." << std::endl;
+        exit(1);
+    }
+
+    dt = std::numeric_limits<scalar>::signaling_NaN();
+    if( !stringutils::extractFromString(std::string(timend->value()),dt) )
+    {
+        std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse 'dt' attribute for stepper. Value must be numeric. Exiting." << std::endl;
+        exit(1);
     }
 }
 
@@ -488,19 +521,18 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
         Fluid *fluid = new Fluid(numParticles, mass, p0, h, iters, maxneighbors, minneighbors);
 
         loadFluidBoundingBox(nd, *fluid);
+        loadFluidVolumes(nd, *fluid);
 
-        //TODO - make fluid volume struct
-        float x;
-        float y;
-        float z;
-        for(int i = 0; i < 1000; ++i){
-            x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-            y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-            z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-            fluid->setFPPos(i, Vector3s(x, y, z));
-            fluid->setFPVel(i, Vector3s(0, 0, 0));
-        }
-        //TODO
+        // float x;
+        // float y;
+        // float z;
+        // for(int i = 0; i < 1000; ++i){
+        //     x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+        //     y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+        //     z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+        //     fluid->setFPPos(i, Vector3s(x, y, z));
+        //     fluid->setFPVel(i, Vector3s(0, 0, 0));
+        // }
 
         scene.insertFluid(fluid);
     }
@@ -612,6 +644,169 @@ void SceneXMLParser::loadFluidBoundingBox(rapidxml::xml_node<>* node, Fluid& flu
         std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
               << "Missing bounding box for fluid. Exiting." << std::endl;
         exit(1);
+    }
+}
+
+void SceneXMLParser::loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid) {
+
+    assert(node != NULL);
+
+    int volumenum = 0;
+    for (rapidxml::xml_node<>* nd = node->first_node("fluidvolume"); nd; nd = nd->next_sibling("fluidvolume")) {
+
+        scalar xmin, xmax, ymin, ymax, zmin, zmax;
+        int numparticles;
+        fluid_volume_mode_t mode;
+        bool random;
+
+        if (nd->first_attribute("xmin")) {
+            std::string attribute(nd->first_attribute("xmin")->value());
+            if( !stringutils::extractFromString(attribute,xmin) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of xmin attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing xmin attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("xmax")) {
+            std::string attribute(nd->first_attribute("xmax")->value());
+            if( !stringutils::extractFromString(attribute,xmax) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of xmax attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing xmax attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("ymin")) {
+            std::string attribute(nd->first_attribute("ymin")->value());
+            if( !stringutils::extractFromString(attribute,ymin) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of ymin attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing ymin attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("ymax")) {
+            std::string attribute(nd->first_attribute("ymax")->value());
+            if( !stringutils::extractFromString(attribute,ymax) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of ymax attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing ymax attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("zmin")) {
+            std::string attribute(nd->first_attribute("zmin")->value());
+            if( !stringutils::extractFromString(attribute,zmin) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of zmin attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing zmin attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("zmax")) {
+            std::string attribute(nd->first_attribute("zmax")->value());
+            if( !stringutils::extractFromString(attribute,zmax) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of zmax attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing zmax attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("numparticles")) {
+            std::string attribute(nd->first_attribute("numparticles")->value());
+            if( !stringutils::extractFromString(attribute,numparticles) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of numparticles attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing numparticles attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("mode")) {
+            std::string mode_string(nd->first_attribute("mode")->value());
+            if( mode_string != "box" && mode_string != "sphere" )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of mode attribute for fluid volume. Value must be either box or sphere. Exiting." << std::endl;
+              exit(1);
+            }
+            if (mode_string == "box") {
+                mode = kFLUID_VOLUME_MODE_BOX;
+            }
+            else if (mode_string == "sphere") {
+                mode = kFLUID_VOLUME_MODE_SPHERE;
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing mode attribute for fluid volume. Value must be either box or sphere. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("random")) {
+            std::string attribute(nd->first_attribute("random")->value());
+            if( !stringutils::extractBoolFromString(attribute,random) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of random attribute for fluid volume. Value must be boolean. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing random attribute for fluid volume. Value must be boolean. Exiting." << std::endl;
+            exit(1);
+        }
+
+        FluidVolume volume(xmin, xmax, ymin, ymax, zmin, zmax, numparticles, mode, random);
+        fluid.insertFluidVolume(volume);
+    }
+
+    if (volumenum == 0) {
+        std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
+                  << "No fluid volumes in fluid." << std::endl;
     }
 }
 

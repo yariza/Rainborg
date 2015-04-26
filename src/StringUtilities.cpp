@@ -52,3 +52,11 @@ std::ostream& endblue( std::ostream& stream )
 }
 
 }
+
+namespace stringutils {
+
+bool extractBoolFromString( const std::string& in_string, bool& output) {
+    return (std::stringstream(in_string) >> std::boolalpha >> output);
+}
+
+}

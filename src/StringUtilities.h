@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 
 namespace outputmod
 {
@@ -41,6 +42,8 @@ bool extractFromString( const std::string& in_string, T& output )
 {
 	return (std::stringstream(in_string) >> output);
 }
+
+bool extractBoolFromString( const std::string& in_string, bool& output);
 
 }
 
