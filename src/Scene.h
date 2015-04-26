@@ -24,6 +24,8 @@ public:
     std::vector<FluidBoundary*>& getFluidBoundaries(); 
     std::vector<FluidForce*>& getFluidForces();
 
+    void load();
+
     private: 
     std::vector<Fluid*> m_fluids; 
     std::vector<FluidBoundary*> m_boundaries; 

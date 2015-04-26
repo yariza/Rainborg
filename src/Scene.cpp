@@ -52,4 +52,8 @@ void Scene::insertFluidForce(FluidForce* newFluidForce){
     m_fluidForces.push_back(newFluidForce);
 }
 
-
+void Scene::load() {
+    for (std::vector<Fluid*>::size_type i = 0; i < m_fluids.size(); i++) {
+        m_fluids[i]->loadFluidVolumes();
+    }
+}

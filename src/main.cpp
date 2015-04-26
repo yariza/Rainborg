@@ -95,20 +95,24 @@ void testBasicSetup(){
 
     FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10);
 
-    Fluid *fluid = new Fluid(1000, 2.0, 10000.0, .5, 3, 100, 3);
+    Fluid *fluid = new Fluid(2.0, 10000.0, .5, 3, 100, 3);
+
+    FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
+    fluid->insertFluidVolume(volume);
+
 
     //fluid.setFPMass(2.0);
     //fluid.setRestDensity(1.0);
-    float x;
-    float y;
-    float z;
-    for(int i = 0; i < 1000; ++i){
-        x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-        y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-        z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-        fluid->setFPPos(i, Vector3s(x, y, z));
-        fluid->setFPVel(i, Vector3s(0, 0, 0));
-    }
+    // float x;
+    // float y;
+    // float z;
+    // for(int i = 0; i < 1000; ++i){
+    //     x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+    //     y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+    //     z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+    //     fluid->setFPPos(i, Vector3s(x, y, z));
+    //     fluid->setFPVel(i, Vector3s(0, 0, 0));
+    // }
    //fluid->setFPPos(1, Vector3s(.2, .2, .1));
     //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
     fluid->setBoundingBox(fbox);
@@ -128,10 +132,6 @@ void testBasicSetup(){
 
     //FluidBoundingBox fbox;
 //    std::cout << fbox.minX() << std::endl;
-
-    FluidVolume volume = FluidVolume(0, 10, 0, 10, 0, 10, 100000, kFLUID_VOLUME_MODE_BOX, false);
-    Vector3s pos_array[100000];
-    volume.setParticlePositions(pos_array, 0);
 
     std::cout << "end test" << std::endl;
 }
@@ -200,23 +200,27 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(10000, 10000.0, 210000.0, .5, 3, 300, 3);
+        Fluid *fluid = new Fluid(50000.0, 190000.0, 1., 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
-         float x;
-         float y;
-         float z;
-         for(int i = 0; i < 10000; ++i){
-             x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-             y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-             z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-             fluid->setFPPos(i, Vector3s(x, y, z));
-             fluid->setFPVel(i, Vector3s(0, 0, 0));
-         }
+         // float x;
+         // float y;
+         // float z;
+         // for(int i = 0; i < 3000; ++i){
+         //     x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+         //     y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+         //     z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+         //     fluid->setFPPos(i, Vector3s(x, y, z));
+         //     fluid->setFPVel(i, Vector3s(0, 0, 0));
+         // }
+
         //fluid->setFPPos(1, Vector3s(.2, .2, .1));
          //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
         fluid->setBoundingBox(fbox);
+
+        FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
+        fluid->insertFluidVolume(volume);
 
         scene->insertFluid(fluid);
 
@@ -235,6 +239,8 @@ void loadScene( const std::string& file_name) {
         g_dt = 0.01;
         max_time = 100.0;
     //END PLACEHOLDER
+
+    g_simulation->load();
 
     assert( g_simulation != NULL );
 

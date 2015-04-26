@@ -588,22 +588,10 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
             exit(1);
         }
 
-        numParticles = 3000; //TODO
-        Fluid *fluid = new Fluid(numParticles, mass, p0, h, iters, maxneighbors, minneighbors);
+        Fluid *fluid = new Fluid(mass, p0, h, iters, maxneighbors, minneighbors);
 
         loadFluidBoundingBox(nd, *fluid);
         loadFluidVolumes(nd, *fluid);
-
-        float x;
-        float y;
-        float z;
-        for(int i = 0; i < 3000; ++i){
-            x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-            y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-            z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-            fluid->setFPPos(i, Vector3s(x, y, z));
-            fluid->setFPVel(i, Vector3s(0, 0, 0));
-        }
 
         scene.insertFluid(fluid);
         fluidsnum++;

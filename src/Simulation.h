@@ -11,6 +11,7 @@ public:
     Simulation(Scene* scene, Stepper* stepper, SceneRenderer* renderer);
     ~Simulation();
 
+    void load();
     void stepSystem(const scalar& dt);
 
     // display functions

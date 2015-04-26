@@ -1,7 +1,7 @@
 #include "Fluid.h"
 #include "Scene.h"
 
-Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors)
+Fluid::Fluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors)
 : m_fpmass(mass)
 , m_p0(p0)
 , m_h(h)
@@ -13,43 +13,44 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
 {
     // Allocate memory for m_pos, m_ppos, m_vel, m_accumForce? 
 
-    m_numParticles = numParticles;
-    //m_pos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    //m_ppos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
-    m_pcalc = (scalar *)malloc(numParticles * sizeof(scalar)); 
-    memset(m_pcalc, 0, numParticles * sizeof(scalar));
-    //m_dpos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    //m_vel = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    //m_accumForce = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    
-    m_pos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
-    m_ppos = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
-    m_dpos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
-    m_vel = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
-    m_accumForce = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
-    m_colors = (Vector4s *)malloc(numParticles * sizeof(Vector4s)); 
+    // DEFER ALL LOADING TO Fluid.loadFluidVolumes()
 
-    m_gridInd = (int *)malloc(numParticles * 3 * sizeof(int));
+    // m_numParticles = numParticles;
+    // //m_pos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    // //m_ppos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    // m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
+    // m_pcalc = (scalar *)malloc(numParticles * sizeof(scalar)); 
+    // memset(m_pcalc, 0, numParticles * sizeof(scalar));
+    // //m_dpos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    // //m_vel = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    // //m_accumForce = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
+    
+    // m_pos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
+    // m_ppos = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    // m_dpos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
+    // m_vel = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    // m_accumForce = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    // m_colors = (Vector4s *)malloc(numParticles * sizeof(Vector4s)); 
+
+    // m_gridInd = (int *)malloc(numParticles * 3 * sizeof(int));
     m_grid = NULL; // don't know bounding box yet
     m_gridCount = NULL;
 
-    assert (m_pos != NULL);
-    assert(m_ppos != NULL);
-    assert(m_lambda != NULL); 
-    assert(m_pcalc != NULL); 
-    assert(m_dpos != NULL);
-    assert(m_vel != NULL);
-    assert(m_gridInd != NULL);
-    assert(m_accumForce != NULL);
-    assert(m_colors != NULL); 
+    // assert (m_pos != NULL);
+    // assert(m_ppos != NULL);
+    // assert(m_lambda != NULL); 
+    // assert(m_pcalc != NULL); 
+    // assert(m_dpos != NULL);
+    // assert(m_vel != NULL);
+    // assert(m_gridInd != NULL);
+    // assert(m_accumForce != NULL);
+    // assert(m_colors != NULL); 
 }
 
 
 Fluid::Fluid(const Fluid& otherFluid)
 : m_eps(.01)
 {
-    m_numParticles = otherFluid.getNumParticles();
     m_fpmass = otherFluid.getFPMass();
     m_p0 = otherFluid.getRestDensity();
     m_h = otherFluid.getKernelH(); 
@@ -57,33 +58,35 @@ Fluid::Fluid(const Fluid& otherFluid)
     m_maxNeighbors = otherFluid.getMaxNeighbors();
     m_minNeighbors = otherFluid.getMinNeighbors(); 
 
+    // loadFluidVolumes is necessary to reallocate stuff again
+
     // Allocate memory 
     //m_pos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     //m_ppos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    m_lambda = (scalar *)malloc(m_numParticles * sizeof(scalar));
-    m_pcalc = (scalar *)malloc(m_numParticles * sizeof(scalar)); 
-    memset(m_pcalc, 0, m_numParticles * sizeof(scalar));
+    // m_lambda = (scalar *)malloc(m_numParticles * sizeof(scalar));
+    // m_pcalc = (scalar *)malloc(m_numParticles * sizeof(scalar)); 
+    // memset(m_pcalc, 0, m_numParticles * sizeof(scalar));
     //m_dpos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar)); 
     //m_vel = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
     //m_accumForce = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    m_gridInd = (int *)malloc(m_numParticles * 3 * sizeof(int));
+    // m_gridInd = (int *)malloc(m_numParticles * 3 * sizeof(int));
 
-    m_pos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
-    m_ppos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
-    m_dpos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
-    m_vel = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
-    m_accumForce = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
-    m_colors = (Vector4s *)malloc(m_numParticles * sizeof(Vector4s)); 
+    // m_pos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
+    // m_ppos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
+    // m_dpos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
+    // m_vel = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
+    // m_accumForce = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
+    // m_colors = (Vector4s *)malloc(m_numParticles * sizeof(Vector4s)); 
 
-    assert (m_pos != NULL);
-    assert(m_ppos != NULL);
-    assert(m_pcalc != NULL); 
-    assert(m_lambda != NULL); 
-    assert(m_dpos != NULL);
-    assert(m_vel != NULL);
-    assert(m_accumForce != NULL);
-    assert(m_gridInd != NULL); 
-    assert(m_colors != NULL); 
+    // assert (m_pos != NULL);
+    // assert(m_ppos != NULL);
+    // assert(m_pcalc != NULL); 
+    // assert(m_lambda != NULL); 
+    // assert(m_dpos != NULL);
+    // assert(m_vel != NULL);
+    // assert(m_accumForce != NULL);
+    // assert(m_gridInd != NULL); 
+    // assert(m_colors != NULL); 
     // Set positions, velocity 
     // Note: predicted positions, accumulatedForces are recalculated each time step so no point copying those
 
@@ -91,9 +94,9 @@ Fluid::Fluid(const Fluid& otherFluid)
     //memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * 3 * sizeof(scalar));
     //memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * 3 * sizeof(scalar));
 
-    memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * sizeof(Vector3s)); 
-    memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * sizeof(Vector3s)); 
-    memcpy(m_colors, otherFluid.getColors(), m_numParticles * sizeof(Vector4s)); 
+    // memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * sizeof(Vector3s)); 
+    // memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * sizeof(Vector3s)); 
+    // memcpy(m_colors, otherFluid.getColors(), m_numParticles * sizeof(Vector4s)); 
 
     m_boundingBox = otherFluid.getBoundingBox(); 
 
@@ -135,18 +138,19 @@ void Fluid::setRestDensity(scalar p0){
     m_p0 = p0;
 }
 
-void Fluid::setFPPos(int fp, const Vector3s& pos){
-    assert(fp >= 0 && fp < m_numParticles);
+// use fluid volumes instead
+// void Fluid::setFPPos(int fp, const Vector3s& pos){
+//     // assert(fp >= 0 && fp < m_numParticles);
 
-    m_pos[fp] = pos; 
+//     m_pos[fp] = pos; 
 
-    //    m_pos[fp*3] = pos[0];
-    //    m_pos[fp*3+1] = pos[1];
-    //    m_pos[fp*3+2] = pos[2];
-}
+//     //    m_pos[fp*3] = pos[0];
+//     //    m_pos[fp*3+1] = pos[1];
+//     //    m_pos[fp*3+2] = pos[2];
+// }
 
 void Fluid::setFPVel(int fp, const Vector3s& vel){
-    assert(fp >= 0 && fp < m_numParticles);
+    // assert(fp >= 0 && fp < m_numParticles);
     m_vel[fp] = vel;  
 
     //    m_vel[fp*3] = vel[0];
@@ -197,7 +201,12 @@ int Fluid::getMinNeighbors() const{
 }
 
 int Fluid::getNumParticles() const{
-    return m_numParticles;
+    int numParticles = 0;
+    for (std::vector<FluidVolume>::size_type i=0; i<m_volumes.size(); i++) {
+
+        numParticles += m_volumes[i].m_numParticles;
+    }
+    return numParticles;
 }
 
 scalar Fluid::getFPMass() const{
@@ -245,6 +254,31 @@ const std::vector<FluidVolume>& Fluid::getFluidVolumes() const {
     return m_volumes;
 }
 
+void Fluid::loadFluidVolumes() {
+
+    int numParticles = getNumParticles();
+
+    m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
+    m_pcalc = (scalar *)malloc(numParticles * sizeof(scalar)); 
+    memset(m_pcalc, 0, numParticles * sizeof(scalar));
+    m_pos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
+    m_ppos = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    m_dpos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
+    m_vel = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    m_accumForce = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    m_colors = (Vector4s *)malloc(numParticles * sizeof(Vector4s)); 
+    m_gridInd = (int *)malloc(numParticles * 3 * sizeof(int));
+
+    int offset = 0;
+    for (std::vector<FluidVolume>::size_type i=0; i<m_volumes.size(); i++) {
+
+        FluidVolume& volume = m_volumes[i];
+
+        volume.setParticlePositions(m_pos, offset);
+
+        offset += volume.m_numParticles;
+    }
+}
 
 void Fluid::stepSystem(Scene& scene, scalar dt){
     //std::cout << "step" << std::endl;
@@ -257,8 +291,9 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
 
     // make sure that predicted positions don't go out of bounds here 
     std::cout << "preserving boundary" << std::endl;
-    memset(m_dpos, 0, m_numParticles * sizeof(Vector3s)); 
-    preserveOwnBoundary();  
+    memset(m_dpos, 0, getNumParticles() * sizeof(Vector3s)); 
+    preserveOwnBoundary(); 
+    
     applydPToPredPos();
      
     std::cout << "building grid" << std::endl;  
@@ -309,7 +344,7 @@ void Fluid::calculatePressures(){
     int gi = 0; // current grid id
     scalar press; 
     int ncount; // number of neighbors
-    for(int p = 0; p < m_numParticles; ++p){
+    for(int p = 0; p < getNumParticles(); ++p){
         // grab neighbors?  
         ncount = 0; 
         press = 0;
@@ -376,13 +411,13 @@ Vector3s Fluid::calcGradConstraintAtI(int p){
 }
 
 void Fluid::calculateLambdas(){
-    memset(m_lambda, 0, m_numParticles * sizeof(scalar)); 
+    memset(m_lambda, 0, getNumParticles() * sizeof(scalar)); 
 
     scalar top = 0; 
     scalar gradSum; 
     scalar gradL; 
     int gi; 
-    for(int p = 0; p < m_numParticles; ++p){
+    for(int p = 0; p < getNumParticles(); ++p){
         gradSum = 0;
         top = -(m_pcalc[p]/m_p0 - 1.0); 
         // for all neighbors, calculate Constraint gradient at p 
@@ -406,8 +441,8 @@ void Fluid::calculateLambdas(){
 }
 
 void Fluid::calculatedPos(){
-    memset(m_dpos, 0, m_numParticles * sizeof(Vector3s)); 
-    for(int p = 0; p < m_numParticles; ++p){
+    memset(m_dpos, 0, getNumParticles() * sizeof(Vector3s)); 
+    for(int p = 0; p < getNumParticles(); ++p){
         Vector3s dp(0.0, 0.0, 0.0); 
 
         int q = 0;
@@ -435,13 +470,13 @@ void Fluid::accumulateForce(Scene& scene){
     std::vector<FluidForce*> fluidForces = scene.getFluidForces();
 
     // init F to 0 
-    memset (m_accumForce, 0, m_numParticles * sizeof(Vector3s)); 
+    memset (m_accumForce, 0, getNumParticles() * sizeof(Vector3s)); 
     for(int i = 0; i < fluidForces.size(); ++i){
-        fluidForces[i]->addGradEToTotal(m_pos, m_vel, m_fpmass, m_accumForce, m_numParticles);
+        fluidForces[i]->addGradEToTotal(m_pos, m_vel, m_fpmass, m_accumForce, getNumParticles());
     }
 
     // F *= -1.0/mass
-    for(int i = 0; i < m_numParticles; ++i){
+    for(int i = 0; i < getNumParticles(); ++i){
         m_accumForce[i] /= -1; 
         //m_accumForce[i*3] /= -m_fpmass; 
         //m_accumForce[i*3+1] /= -m_fpmass;
@@ -450,13 +485,13 @@ void Fluid::accumulateForce(Scene& scene){
 }
 
 void Fluid::updateVelocityFromForce(scalar dt){
-    for(int i = 0; i < m_numParticles; ++i){
+    for(int i = 0; i < getNumParticles(); ++i){
         m_vel[i] += m_accumForce[i]/m_fpmass * dt; 
     }    
 }
 
 void Fluid::updatePredPosition(scalar dt){
-    for(int i = 0; i < m_numParticles; ++i){
+    for(int i = 0; i < getNumParticles(); ++i){
         m_ppos[i] = m_pos[i] + m_vel[i] * dt;
     }
 }
@@ -494,7 +529,7 @@ void Fluid::clearGrid(){
 // same grid at once too often, but when it does, deal with it atomically? 
 // Still sucks for coalescence and things though. 
 void Fluid::buildGrid(){
-    for(int i= 0; i < m_numParticles; ++i){
+    for(int i= 0; i < getNumParticles(); ++i){
         //getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
         getGridIdx(m_ppos[i], m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); // which grid location am I in 
      }
@@ -504,7 +539,7 @@ void Fluid::buildGrid(){
 
     // Build list of grid particles
     int gind; 
-    for(int i = 0; i < m_numParticles; ++i){
+    for(int i = 0; i < getNumParticles(); ++i){
         gind = getGridIdx(m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
         m_grid[gind * m_maxNeighbors + m_gridCount[gind]] = i; 
         m_gridCount[gind] ++; 
@@ -513,18 +548,18 @@ void Fluid::buildGrid(){
 }
 
 void Fluid::preserveOwnBoundary(){
-    m_boundingBox.dealWithCollisions(m_ppos, m_dpos, m_numParticles);
+    m_boundingBox.dealWithCollisions(m_ppos, m_dpos, getNumParticles());
 }
 
 void Fluid::dealWithCollisions(Scene& scene){
     std::vector<FluidBoundary *>bounds = scene.getFluidBoundaries(); 
     for(int i = 0; i < bounds.size(); ++i){
-        bounds[i]->dealWithCollisions(m_ppos, m_dpos, m_numParticles); 
+        bounds[i]->dealWithCollisions(m_ppos, m_dpos, getNumParticles()); 
     }
 }
 
 void Fluid::recalculateVelocity(scalar dt){
-    for(int i = 0; i < m_numParticles; ++i){
+    for(int i = 0; i < getNumParticles(); ++i){
         m_vel[i] = (m_ppos[i] - m_pos[i])/dt; 
     }
 }
@@ -536,7 +571,7 @@ void Fluid::updateFinalPosition(){
 }
 
 void Fluid::applydPToPredPos(){
-    for(int i = 0; i < m_numParticles; ++i){
+    for(int i = 0; i < getNumParticles(); ++i){
         m_ppos[i] += m_dpos[i]; 
         if(glm::length(m_dpos[i]) > 5.0){
             std::cout << "huge update at " << i << std::endl;

@@ -15,20 +15,22 @@ class Fluid{
 
 public:
 
-    Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int maxNeigh = 20, int minNeighbor = 3);
+    Fluid(scalar mass, scalar p0, scalar h, int iters, int maxNeigh = 20, int minNeighbor = 3);
     Fluid(const Fluid& otherFluid);
     ~Fluid();
 
     void stepSystem(Scene& scene, scalar dt);
     void setFPMass(scalar fpm); 
     void setRestDensity(scalar p0);
-    void setFPPos(int fp, const Vector3s& pos);
+    // void setFPPos(int fp, const Vector3s& pos);
     void setFPVel(int fp, const Vector3s& vel);
     void setKernelH(scalar h);
     void setNumIterations(int iter); 
     void setBoundingBox(FluidBoundingBox& newBound);
     void setColor(int i, const Vector4s& col); 
     void insertFluidVolume(FluidVolume& volume);
+
+    void loadFluidVolumes();
 
     int getNumParticles() const;
     int getNumIterations() const;
@@ -72,7 +74,6 @@ private:
     void updateFinalPosition();     
     
     
-    int m_numParticles;
     int m_maxNeighbors; 
     int m_minNeighbors; // minimum number of neighbors to do calculations
 
