@@ -107,8 +107,8 @@ __global__ void sendToVBO(float *vbo, Vector3s* d_pos){
 __global__ void updateFromForce(Vector3s* d_pos, Vector3s* d_vel, Vector3s* d_ppos, scalar dt, Vector3s force){
     int id = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(id < NUM_PARTICLES){
-        //d_vel[id] += force * dt / ((scalar)FP_MASS);
-        d_vel[id] += force * dt;
+        d_vel[id] += force * dt / ((scalar)FP_MASS);
+        //d_vel[id] += force * dt;
         d_ppos[id] = d_pos[id] + d_vel[id]*dt; 
     }
 }
@@ -359,8 +359,8 @@ __global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d
     #endif
 }
 
-/*
-__global__ void applyVorticity(){
+
+__global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar dt){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(p > NUM_PARTICLES)
         return;
@@ -368,9 +368,10 @@ __global__ void applyVorticity(){
     Vector3s pi = d_pos[p];
     Vector3s pj; 
     Vector3s omega = d_omega[p]; 
+    scalar dom;
     int gi;
     int q;
-    Vector3s N; 
+    Vector3s vort(0, 0, 0); 
     Vector3s dp;
     
 
@@ -382,16 +383,19 @@ __global__ void applyVorticity(){
                     q = d_grid[gi * MAX_NEIGHBORS + n];
                     pj = d_pos[q]; 
                     dp = pj - pi; 
-                                     
-
+                    dom = glm::length(omega - d_omega[q]);     
+                    vort[0] += dom / dp[0];
+                    vort[1] += dom / dp[1];
+                    vort[2] += dom / dp[2];                      
                 }
             }
         }
     }
-    dt * VORT_EPS * glm::cross(N, omega); 
+    vort /= (glm::length(N) + EPS);     
+    d_vel[p] += (scalar)(dt * VORT_EPS / FP_MASS) * (glm::cross(vort, omega)); 
 
 }
-*/
+
 
 void initGPUFluid(){
     // allocate memory on GPU
@@ -474,7 +478,7 @@ void preserveOwnBoundary(bool update){
 
 void updatePredFromForce(scalar dt){
     int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0));
-    updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, -10.0f, 0.f));    
+    updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, FP_MASS*-10.0f, 0.f));    
     //updateFromForce<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_ppos, dt, Vector3s(0.f, 0.0f, 0.f));    
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
@@ -542,7 +546,7 @@ void applydPToPredPos(){
     GPU_CHECKERROR(cudaThreadSynchronize());
 }
 
-void adjustVel(){
+void adjustVel(scalar dt){
     #ifndef XSPH
     return;
     #endif
@@ -555,9 +559,10 @@ void adjustVel(){
     #ifndef VORTICITY
     return;
     #endif
-    //applyVorticity<<<gridSize, BLOCKSIZE>>>(); 
-    //GPU_CHECKERROR(cudaGetLastError());
-    //GPU_CHECKERROR(cudaThreadSynchronize());
+ 
+    applyVorticity<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, dt); 
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
 
 
 }
@@ -582,7 +587,7 @@ void stepSystemGPUFluid(scalar dt){
     }
     
     updateValForReals(dt); 
-    adjustVel();
+    adjustVel(dt);
 }
 
 
