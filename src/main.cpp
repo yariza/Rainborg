@@ -161,7 +161,7 @@ void loadScene( const std::string& file_name) {
     // Maximum time in the simulation to run for. This has nothing to do with run time, cpu time, etc. This is time in the 'virtual world'.
     scalar max_time;
     // Maximum frequency, in wall clock time, to execute the simulation for. This serves as a cap for simulations that run too fast to see a solution.
-    scalar steps_per_sec_cap = 100.0;
+    scalar steps_per_sec_cap = 100000.0;
 
     // Load the simulation and pieces of rendring and UI startgreen
     assert( g_simulation == NULL );
@@ -178,14 +178,14 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(3000, 50000.0, 190000.0, 1., 3, 100, 3);
+        Fluid *fluid = new Fluid(10000, 10000.0, 210000.0, .5, 3, 300, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
          float x;
          float y;
          float z;
-         for(int i = 0; i < 3000; ++i){
+         for(int i = 0; i < 10000; ++i){
              x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
              y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
              z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
@@ -211,7 +211,7 @@ void loadScene( const std::string& file_name) {
 
         g_simulation = new Simulation(scene, stepper, renderer);
         g_dt = 0.01;
-        max_time = 10.0;
+        max_time = 100.0;
     //END PLACEHOLDER
 
     assert( g_simulation != NULL );

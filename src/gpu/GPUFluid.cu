@@ -340,7 +340,7 @@ __global__ void updateXSPH(Vector3s *d_pos, Vector3s *d_vel, int *d_grid, int *d
 void initGPUFluid(){
     // allocate memory on GPU
     // Initialize positions, velocities
-    std::cout << "Initializing things" << std::endl;
+    std::cout << "GPU: Initializing things" << std::endl;
 
     GPU_CHECKERROR(cudaMalloc((void **)&d_pos, NUM_PARTICLES * sizeof(Vector3s)));
     GPU_CHECKERROR(cudaMalloc((void **)&d_vel, NUM_PARTICLES * sizeof(Vector3s)));
@@ -485,7 +485,6 @@ void adjustVel(){
     #ifndef XSPH
     return;
     #endif
-    return;
 
     int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0)); 
     updateXSPH<<<gridSize, BLOCKSIZE>>>(d_pos, d_vel, d_grid, d_gridCount, d_gridInd); 

@@ -256,47 +256,47 @@ void Fluid::stepSystem(Scene& scene, scalar dt){
     updatePredPosition(dt); 
 
     // make sure that predicted positions don't go out of bounds here 
+    std::cout << "preserving boundary" << std::endl;
     memset(m_dpos, 0, m_numParticles * sizeof(Vector3s)); 
-    preserveOwnBoundary(); 
-    
+    preserveOwnBoundary();  
     applydPToPredPos();
      
-    //std::cout << "building grid" << std::endl;  
+    std::cout << "building grid" << std::endl;  
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
-    // loop for solve iterations
+    //loop for solve iterations
     for(int loop = 0; loop < m_iters; ++loop){
-        //std::cout << "in loop " << loop << std::endl;
+        std::cout << "in loop " << loop << std::endl;
         // calculate lambda for each particle
-        //std::cout << "calculating pressures" << std::endl;
+        std::cout << "calculating pressures" << std::endl;
         calculatePressures(); 
-        //std::cout << "calculating lambdas" << std::endl;
+        std::cout << "calculating lambdas" << std::endl;
         calculateLambdas();  
         // Calculate dpos for each particle
-        //std::cout << "calculating dpos" << std::endl;
+        std::cout << "calculating dpos" << std::endl;
         calculatedPos(); 
 
         // Deal with collision detection and response
-        //std::cout << "dealing with collisions" << std::endl;
+        std::cout << "dealing with collisions" << std::endl;
         dealWithCollisions(scene); 
-        //std::cout << "own boundary" << std::endl;
+        std::cout << "own boundary" << std::endl;
         preserveOwnBoundary(); 
 
         // Update predicted position with dP
-        //std::cout << "applying dpos to ppos" << std::endl;
+        std::cout << "applying dpos to ppos" << std::endl;
         applydPToPredPos(); 
     }
-    //std::cout << "end loop" << std::endl;
+    std::cout << "end loop" << std::endl;
 
     // Update velocities
-    //std::cout << "recalculating velocities" << std::endl;
+    std::cout << "recalculating velocities" << std::endl;
     recalculateVelocity(dt); 
     //std::cout << "new vel: " << std::endl;
     //updateVelocityFromForce(dt);  // Yeah no this shouldn't be here
 
     // Apply vorticity confinement and XSPH viscosity
 
-    //std::cout << "updating final positions" << std::endl;
+    std::cout << "updating final positions" << std::endl;
     updateFinalPosition(); 
 
     //std::cout << "end step system" << std::endl;
@@ -339,12 +339,12 @@ void Fluid::calculatePressures(){
         
         //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
         
-        /*
+        
         if(p == 700){
             std::cout << "arb count: " << ncount << std::endl;
             std::cout << "arb press: " << m_fpmass * press << std::endl;
         }
-        */
+        
 
     }
     //std::cout << "ending Pressure calculations" << std::endl;
