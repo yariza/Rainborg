@@ -18,7 +18,29 @@
 #include "Simulation.h"
 #include "TimingUtilities.h"
 #include "YImage.h"
+
+#ifdef GPU_ENABLED
 #include "gpu/GPUFluid.h"
+#include <cuda.h>
+#include <cuda_gl_interop.h>
+#include <cuda_runtime.h>
+#include <helper_cuda.h>
+#include <helper_cuda_gl.h>
+#endif
+
+using namespace openglframework;
+
+#ifdef GPU_ENABLED
+
+#define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
+static void gpuCheckError(cudaError_t err, const char *file, int line){
+    if(err != cudaSuccess){
+        fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+    }   
+}
+
+#endif
+
 
 // callback functions for GLFW
 void idle();
@@ -239,6 +261,8 @@ int main(int args, char **argv)
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
 
+    GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
+ 
 
     loadScene(g_xml_scene_file);
 
