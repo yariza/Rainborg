@@ -1,5 +1,6 @@
 #include "FluidVolume.h"
 #include <iostream>
+#include <cmath>
 
 FluidVolume::FluidVolume(scalar minX, scalar maxX, scalar minY, scalar maxY, scalar minZ, scalar maxZ,
             int numParticles, fluid_volume_mode_t mode, bool random)
@@ -18,7 +19,7 @@ FluidVolume::FluidVolume(scalar minX, scalar maxX, scalar minY, scalar maxY, sca
     scalar zwid = maxZ - minZ;
 
     scalar inv_dens = (xwid*ywid*zwid) / numParticles;
-    m_dens_cbrt = std::cbrt(inv_dens);
+    m_dens_cbrt = cbrt(inv_dens);
 }
 
 void FluidVolume::setParticlePositions(Vector3s* pos, int offset) {
