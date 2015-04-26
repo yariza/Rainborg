@@ -7,6 +7,7 @@
 
 #include "MathDefs.h"
 #include "FluidBoundingBox.h"
+#include "FluidVolume.h"
 
 class Scene;
 
@@ -27,6 +28,7 @@ public:
     void setNumIterations(int iter); 
     void setBoundingBox(FluidBoundingBox& newBound);
     void setColor(int i, const Vector4s& col); 
+    void insertFluidVolume(FluidVolume& volume);
 
     int getNumParticles() const;
     int getNumIterations() const;
@@ -41,6 +43,7 @@ public:
     Vector3s* getFPVel() const; 
     Vector4s* getColors() const;
     const FluidBoundingBox& getBoundingBox() const;
+    const std::vector<FluidVolume>& getFluidVolumes() const;
     
 private: 
 
@@ -105,6 +108,8 @@ private:
 
     // Colors? 
     Vector4s *m_colors;     
+
+    std::vector<FluidVolume> m_volumes;
  
 };
 

@@ -60,7 +60,6 @@ void testBasicSetup(){
     // I guess.... try initializing a scene?
 
     //initGPUFluid();
-    return;
 
 
     FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
@@ -106,10 +105,11 @@ void testBasicSetup(){
     //FluidBoundingBox fbox;
 //    std::cout << fbox.minX() << std::endl;
 
+    FluidVolume volume = FluidVolume(0, 10, 0, 10, 0, 10, 100000, kFLUID_VOLUME_MODE_BOX, false);
+    Vector3s pos_array[100000];
+    volume.setParticlePositions(pos_array, 0);
+
     std::cout << "end test" << std::endl;
-
-
-
 }
 
 void parseCommandLine(int argc, char **argv) {
@@ -232,7 +232,7 @@ int main(int args, char **argv)
     parseCommandLine(args, argv);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
-    //testBasicSetup();
+    // testBasicSetup();
 
 
 

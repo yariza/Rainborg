@@ -9,6 +9,7 @@ Fluid::Fluid(int numParticles, scalar mass, scalar p0, scalar h, int iters, int 
 , m_maxNeighbors(maxNeighbors)
 , m_minNeighbors(minNeighbors)
 , m_eps(.01) // wow this is terrible
+, m_volumes()
 {
     // Allocate memory for m_pos, m_ppos, m_vel, m_accumForce? 
 
@@ -103,6 +104,8 @@ Fluid::Fluid(const Fluid& otherFluid)
     m_grid = (int *)malloc(m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int)); 
     m_gridCount = (int *)malloc(m_gridX * m_gridY * m_gridZ * sizeof(int)); 
 
+    m_volumes = otherFluid.getFluidVolumes();
+
     assert(m_grid != NULL);
     assert(m_gridCount != NULL);
 }
@@ -181,6 +184,10 @@ void Fluid::setColor(int i, const Vector4s& col){
     m_colors[i] = col; 
 }
 
+void Fluid::insertFluidVolume(FluidVolume& volume) {
+    m_volumes.push_back(volume);
+}
+
 int Fluid::getMaxNeighbors() const{
     return m_maxNeighbors;
 }
@@ -232,6 +239,10 @@ Vector4s* Fluid::getColors() const{
 
 const FluidBoundingBox& Fluid::getBoundingBox() const{
     return m_boundingBox;
+}
+
+const std::vector<FluidVolume>& Fluid::getFluidVolumes() const {
+    return m_volumes;
 }
 
 
