@@ -167,14 +167,14 @@ void loadScene( const std::string& file_name) {
     assert( g_simulation == NULL );
     // XML parse scene here
     SceneXMLParser xml_scene_parser;
-    xml_scene_parser.loadSimulation( file_name, g_rendering_enabled, g_viewer, &g_simulation,
-                                    g_dt, max_time, steps_per_sec_cap, g_bgcolor, g_description);
+    // xml_scene_parser.loadSimulation( file_name, g_rendering_enabled, g_viewer, &g_simulation,
+    //                                 g_dt, max_time, steps_per_sec_cap, g_bgcolor, g_description);
 
     //PLACEHOLDER
         Scene *scene = new Scene();
 
- //       FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
-        //scene->insertFluidForce(sgf);
+        FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(0, -10.0, 0);
+        scene->insertFluidForce(sgf);
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 

@@ -7,6 +7,7 @@
 
 #include <openglframework.h>
 #include "Simulation.h"
+#include "FluidSimpleGravityForce.h"
 
 class SceneXMLParser {
 
@@ -23,13 +24,15 @@ public:
 
     void loadMaxTime(rapidxml::xml_node<>* node, scalar& max_t);
     void loadMaxSimFrequency( rapidxml::xml_node<>* node, scalar& max_freq );
-    void loadStepper(rapidxml::xml_node<>* node, scalar& dt);
+    void loadStepper(rapidxml::xml_node<>* node, scalar& dt, Stepper** stepper);
 
     void loadBackgroundColor( rapidxml::xml_node<>* node, openglframework::Color& color );
     void loadSceneDescriptionString( rapidxml::xml_node<>* node, std::string& description_string );
 
     void loadViewport(rapidxml::xml_node<> *node, openglframework::GLFWViewer* viewer);
     void loadCamera(rapidxml::xml_node<> *node, openglframework::GLFWViewer* viewer);
+
+    void loadSimpleGravityForces(rapidxml::xml_node<>* node, Scene& scene);
 
     void loadFluids(rapidxml::xml_node<>* node, Scene& scene);
     void loadFluidBoundingBox(rapidxml::xml_node<>* node, Fluid& fluid);

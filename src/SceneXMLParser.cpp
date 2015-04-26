@@ -30,15 +30,23 @@ void SceneXMLParser::loadSimulation(const std::string& file_name,
     loadMaxSimFrequency(node, steps_per_sec_cap);
     loadCamera(node, viewer);
     loadViewport(node, viewer);
-    loadStepper(node, dt);
+
+    Stepper* stepper = NULL;
+    loadStepper(node, dt, &stepper);
     loadBackgroundColor(node, bgcolor);
     loadSceneDescriptionString(node, description);
 
-
     Scene* scene = new Scene();
+
+    loadSimpleGravityForces(node, *scene);
 
     loadFluids(node, *scene);
 
+    SceneRenderer *renderer = NULL;
+    if (rendering_enabled)
+        renderer = new SceneRenderer(scene);
+
+    *sim = new Simulation(scene, stepper, renderer);
 }
 
 void SceneXMLParser::loadMaxTime(rapidxml::xml_node<>* node, scalar& max_t) {
@@ -271,7 +279,7 @@ void SceneXMLParser::loadCamera(rapidxml::xml_node<> *node, openglframework::GLF
     }
 }
 
-void SceneXMLParser::loadStepper(rapidxml::xml_node<>* node, scalar& dt) {
+void SceneXMLParser::loadStepper(rapidxml::xml_node<>* node, scalar& dt, Stepper** stepper) {
 
     assert(node != NULL);
 
@@ -301,6 +309,8 @@ void SceneXMLParser::loadStepper(rapidxml::xml_node<>* node, scalar& dt) {
                   << "Failed to parse 'dt' attribute for stepper. Value must be numeric. Exiting." << std::endl;
         exit(1);
     }
+
+    *stepper = new Stepper();
 }
 
 void SceneXMLParser::loadBackgroundColor( rapidxml::xml_node<>* node, openglframework::Color& color )
@@ -416,6 +426,67 @@ void SceneXMLParser::loadSceneDescriptionString( rapidxml::xml_node<>* node, std
     }
 }
 
+void SceneXMLParser::loadSimpleGravityForces(rapidxml::xml_node<>* node, Scene& scene) {
+
+    assert(node != NULL);
+
+    int forcenum = 0;
+    for (rapidxml::xml_node<>* nd = node->first_node("fluidsimplegravityforce"); nd; nd = nd->next_sibling("fluidsimplegravityforce")) {
+
+        scalar fx, fy, fz;
+
+        if (nd->first_attribute("fx")) {
+            std::string attribute(nd->first_attribute("fx")->value());
+            if( !stringutils::extractFromString(attribute,fx) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse fx attribute for simple gravity force. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing fx attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("fy")) {
+            std::string attribute(nd->first_attribute("fy")->value());
+            if( !stringutils::extractFromString(attribute,fy) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse fy attribute for simple gravity force. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing fy attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("fz")) {
+            std::string attribute(nd->first_attribute("fz")->value());
+            if( !stringutils::extractFromString(attribute,fz) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse fz attribute for simple gravity force. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing fz attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        FluidSimpleGravityForce* force = new FluidSimpleGravityForce(Vector3s(fx, fy, fz));
+
+        scene.insertFluidForce(force);
+        forcenum++;
+    }
+}
+
 void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
 
     assert(node != NULL);
@@ -517,24 +588,30 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
             exit(1);
         }
 
-        numParticles = 1000; //TODO
+        numParticles = 3000; //TODO
         Fluid *fluid = new Fluid(numParticles, mass, p0, h, iters, maxneighbors, minneighbors);
 
         loadFluidBoundingBox(nd, *fluid);
         loadFluidVolumes(nd, *fluid);
 
-        // float x;
-        // float y;
-        // float z;
-        // for(int i = 0; i < 1000; ++i){
-        //     x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-        //     y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-        //     z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-        //     fluid->setFPPos(i, Vector3s(x, y, z));
-        //     fluid->setFPVel(i, Vector3s(0, 0, 0));
-        // }
+        float x;
+        float y;
+        float z;
+        for(int i = 0; i < 3000; ++i){
+            x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+            y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+            z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+            fluid->setFPPos(i, Vector3s(x, y, z));
+            fluid->setFPVel(i, Vector3s(0, 0, 0));
+        }
 
         scene.insertFluid(fluid);
+        fluidsnum++;
+    }
+
+    if (fluidsnum == 0) {
+        std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
+                  << "No fluids in scene." << std::endl;
     }
 }
 
@@ -802,6 +879,7 @@ void SceneXMLParser::loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid) 
 
         FluidVolume volume(xmin, xmax, ymin, ymax, zmin, zmax, numparticles, mode, random);
         fluid.insertFluidVolume(volume);
+        volumenum++;
     }
 
     if (volumenum == 0) {
