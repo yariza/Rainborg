@@ -121,11 +121,12 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
         #endif
     }
     else {
+        SerialFluid* serialFluid = static_cast<SerialFluid*>(m_fluid);
 
-        Vector3s* posArray = m_fluid->getFPPos();
+        Vector3s* posArray = serialFluid->getFPPos();
 
         glBegin(GL_POINTS);
-            for (int i=0; i<m_fluid->getNumParticles(); i++) {
+            for (int i=0; i<serialFluid->getNumParticles(); i++) {
                 glVertex3f(posArray[i].x, posArray[i].y, posArray[i].z);
             }
         glEnd();

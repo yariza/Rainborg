@@ -1,7 +1,7 @@
 #ifndef __FLUID_RENDERER_H__
 #define __FLUID_RENDERER_H__
 
-#include "Fluid.h"
+#include "SerialFluid.h"
 #include "OpenGLRenderer.h"
 
 class FluidRenderer : OpenGLRenderer

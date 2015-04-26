@@ -588,7 +588,8 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
             exit(1);
         }
 
-        Fluid *fluid = new Fluid(mass, p0, h, iters, maxneighbors, minneighbors);
+        //TODO check for type
+        Fluid *fluid = new SerialFluid(mass, p0, h, iters, maxneighbors, minneighbors);
 
         loadFluidBoundingBox(nd, *fluid);
         loadFluidVolumes(nd, *fluid);

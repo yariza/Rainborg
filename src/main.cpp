@@ -95,7 +95,7 @@ void testBasicSetup(){
 
     FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10);
 
-    Fluid *fluid = new Fluid(2.0, 10000.0, .5, 3, 100, 3);
+    Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3);
 
     FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
     fluid->insertFluidVolume(volume);
@@ -200,7 +200,7 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new Fluid(50000.0, 190000.0, 1., 3, 100, 3);
+        Fluid *fluid = new SerialFluid(50000.0, 190000.0, 1., 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
@@ -219,7 +219,7 @@ void loadScene( const std::string& file_name) {
          //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
         fluid->setBoundingBox(fbox);
 
-        FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
+        FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, true);
         fluid->insertFluidVolume(volume);
 
         scene->insertFluid(fluid);
