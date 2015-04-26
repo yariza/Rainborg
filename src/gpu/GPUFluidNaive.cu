@@ -1,5 +1,5 @@
 #ifdef GPU_ENABLED
-#include "GPUFluid.h"
+#include "GPUFluidNaive.h"
 
 #define BLOCKSIZE 256
 
@@ -365,8 +365,7 @@ __global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ome
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(p >= NUM_PARTICLES)
         return;
-
-    /*
+   
     Vector3s pi = d_pos[p];
     Vector3s pj; 
     Vector3s omega = d_omega[p]; 
@@ -395,7 +394,7 @@ __global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ome
     }
     vort /= (glm::length(vort) + EPS);     
     //d_vel[p] += (scalar)(dt * VORT_EPS / FP_MASS) * (glm::cross(vort, omega)); 
-*/
+
 }
 
 
