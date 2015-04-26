@@ -28,7 +28,6 @@ public:
 
     virtual void loadFluidVolumes();
 
-    virtual int getNumParticles() const;
     //scalar* getFPPos() const;
     //scalar* getFPVel() const;
     virtual Vector3s* getFPPos() const;

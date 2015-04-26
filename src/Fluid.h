@@ -27,7 +27,7 @@ public:
 
     virtual void insertFluidVolume(FluidVolume& volume);
 
-    virtual int getNumParticles() const = 0;
+    virtual int getNumParticles() const;
     virtual int getNumIterations() const;
     virtual int getMaxNeighbors() const;
     virtual int getMinNeighbors() const;

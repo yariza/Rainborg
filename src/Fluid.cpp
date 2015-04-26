@@ -26,6 +26,15 @@ Fluid::~Fluid()
 {
 }
 
+int Fluid::getNumParticles() const{
+    int numParticles = 0;
+    for (std::vector<FluidVolume>::size_type i=0; i<m_volumes.size(); i++) {
+
+        numParticles += m_volumes[i].m_numParticles;
+    }
+    return numParticles;
+}
+
 void Fluid::setFPMass(scalar fpm){
     assert(fpm > 0); 
     m_fpmass = fpm;

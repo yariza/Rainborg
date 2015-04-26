@@ -159,15 +159,6 @@ void SerialFluid::setColor(int i, const Vector4s& col){
     m_colors[i] = col; 
 }
 
-int SerialFluid::getNumParticles() const{
-    int numParticles = 0;
-    for (std::vector<FluidVolume>::size_type i=0; i<m_volumes.size(); i++) {
-
-        numParticles += m_volumes[i].m_numParticles;
-    }
-    return numParticles;
-}
-
 //scalar* SerialFluid::getFPPos() const{
 //    return m_pos;
 //}
