@@ -31,6 +31,7 @@ public:
     void loadCamera(rapidxml::xml_node<> *node, openglframework::GLFWViewer* viewer);
 
     void loadFluids(rapidxml::xml_node<>* node, Scene& scene);
+    void loadFluidBoundingBox(rapidxml::xml_node<>* node, Fluid& fluid);
 
     void loadXMLFile( const std::string& filename, std::vector<char>& xmlchars, rapidxml::xml_document<>& doc );
     bool loadTextFileIntoString( const std::string& filename, std::string& filecontents );

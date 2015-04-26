@@ -390,6 +390,228 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
     int fluidsnum = 0;
     for (rapidxml::xml_node<>* nd = node->first_node("fluid"); nd; nd = nd->next_sibling("fluid")) {
 
+        int numParticles = 0;
+        scalar mass, p0, h, iters;
+        int minneighbors, maxneighbors;
+
+        if (nd->first_attribute("mass")) {
+            std::string attribute(nd->first_attribute("mass")->value());
+            if( !stringutils::extractFromString(attribute,mass) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of mass attribute for fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing mass attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("p0")) {
+            std::string attribute(nd->first_attribute("p0")->value());
+            if( !stringutils::extractFromString(attribute,p0) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of p0 attribute for fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing p0 attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("h")) {
+            std::string attribute(nd->first_attribute("h")->value());
+            if( !stringutils::extractFromString(attribute,h) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of h attribute for fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing h attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("iters")) {
+            std::string attribute(nd->first_attribute("iters")->value());
+            if( !stringutils::extractFromString(attribute,iters) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of iters attribute for fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing iters attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("minneighbors")) {
+            std::string attribute(nd->first_attribute("minneighbors")->value());
+            if( !stringutils::extractFromString(attribute,minneighbors) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of minneighbors attribute for fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing minneighbors attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("maxneighbors")) {
+            std::string attribute(nd->first_attribute("maxneighbors")->value());
+            if( !stringutils::extractFromString(attribute,maxneighbors) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of maxneighbors attribute for fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing maxneighbors attribute for fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        numParticles = 1000; //TODO
+        Fluid *fluid = new Fluid(numParticles, mass, p0, h, iters, maxneighbors, minneighbors);
+
+        loadFluidBoundingBox(nd, *fluid);
+
+        //TODO - make fluid volume struct
+        float x;
+        float y;
+        float z;
+        for(int i = 0; i < 1000; ++i){
+            x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+            y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+            z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
+            fluid->setFPPos(i, Vector3s(x, y, z));
+            fluid->setFPVel(i, Vector3s(0, 0, 0));
+        }
+        //TODO
+
+        scene.insertFluid(fluid);
+    }
+}
+
+void SceneXMLParser::loadFluidBoundingBox(rapidxml::xml_node<>* node, Fluid& fluid) {
+
+    assert(node != NULL);
+
+    rapidxml::xml_node<>* nd = node->first_node("boundingbox");
+    if (nd) {
+        scalar xmin, xmax, ymin, ymax, zmin, zmax;
+
+        if (nd->first_attribute("xmin")) {
+            std::string attribute(nd->first_attribute("xmin")->value());
+            if( !stringutils::extractFromString(attribute,xmin) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of xmin attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing xmin attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("xmax")) {
+            std::string attribute(nd->first_attribute("xmax")->value());
+            if( !stringutils::extractFromString(attribute,xmax) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of xmax attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing xmax attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("ymin")) {
+            std::string attribute(nd->first_attribute("ymin")->value());
+            if( !stringutils::extractFromString(attribute,ymin) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of ymin attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing ymin attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("ymax")) {
+            std::string attribute(nd->first_attribute("ymax")->value());
+            if( !stringutils::extractFromString(attribute,ymax) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of ymax attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing ymax attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("zmin")) {
+            std::string attribute(nd->first_attribute("zmin")->value());
+            if( !stringutils::extractFromString(attribute,zmin) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of zmin attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing zmin attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        if (nd->first_attribute("zmax")) {
+            std::string attribute(nd->first_attribute("zmax")->value());
+            if( !stringutils::extractFromString(attribute,zmax) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of zmax attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Missing zmax attribute for bounding box of fluid. Value must be scalar. Exiting." << std::endl;
+            exit(1);
+        }
+
+        FluidBoundingBox* boundingbox = new FluidBoundingBox(xmin, xmax, ymin, ymax, zmin, zmax);
+
+        fluid.setBoundingBox(*boundingbox);
+    }
+    else {
+        std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+              << "Missing bounding box for fluid. Exiting." << std::endl;
+        exit(1);
     }
 }
 
