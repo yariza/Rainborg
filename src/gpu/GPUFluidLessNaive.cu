@@ -1,7 +1,9 @@
 #ifdef GPU_ENABLED
-#include "GPUFluidNaive.h"
+#include "GPUFluidLessNaive.h"
 
 #define BLOCKSIZE 256
+
+namespace gpu_less_naive{
 
 bool deviceHappy = true; 
 
@@ -673,4 +675,5 @@ void cleanUpGPUFluid(){
 
 }
 
+}
 #endif

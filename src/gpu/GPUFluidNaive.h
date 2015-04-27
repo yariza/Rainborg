@@ -1,6 +1,6 @@
 #ifdef GPU_ENABLED
-#ifndef GPU_FLUID_THING_LESS_NAIVE_H__
-#define GPU_FLUID_THING_LESS_NAIVE_H__
+#ifndef GPU_FLUID_THING_H__
+#define GPU_FLUID_THING_H__
 
 #include <iostream>
 #include <stdio.h>
