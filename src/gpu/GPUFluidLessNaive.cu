@@ -15,6 +15,17 @@ static void gpuCheckError(cudaError_t err, const char *file, int line){
 }
 
 
+struct particle{
+    Vector3s pos; 
+    Vector3s vel;
+    Vector3s ppos;
+    Vector3s dpos;
+    Vector3s omega;
+    scalar pcalc;
+    scalar lambda;
+    int gridInd;
+};
+
 __constant__ int GRIDX; 
 __constant__ int GRIDY;
 __constant__ int GRIDZ;
