@@ -34,6 +34,11 @@ int grid_X;
 int grid_Y;
 int grid_Z;
 
+int *d_accumNeighbors = NULL; // use to get average neighbors 
+int h_accumNeighbors; 
+scalar *d_accumPress = NULL; 
+scalar h_accumPress; 
+
 __device__ __host__ scalar wPoly6Kernel(Vector3s pi, Vector3s pj){
     scalar r = glm::distance(pi, pj); 
     if(r > H || r < 0)
@@ -50,7 +55,7 @@ __device__ __host__ Vector3s wSpikyKernelGrad(Vector3s pi, Vector3s pj){
     scalar r = glm::length(dp);  
     if(r > H || r < 0)
         return Vector3s(0.0, 0.0, 0.0); 
-    scalar scale = -45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r); 
+    scalar scale = 45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r); 
     return scale * dp; 
 }
 
@@ -67,7 +72,7 @@ __device__ int get1DGridIdx(int i, int j, int k){
 
 
 __device__ Vector3s calcGradConstraint(Vector3s pi, Vector3s pj){
-    return wSpikyKernelGrad(pi, pj)/(scalar(- P0)); 
+    return (scalar(FP_MASS))*wSpikyKernelGrad(pi, pj)/(scalar(- P0)); 
 }
 
 __device__ Vector3s calcGradConstraintAtI(int p, Vector3s* d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd){
@@ -84,7 +89,7 @@ __device__ Vector3s calcGradConstraintAtI(int p, Vector3s* d_ppos, int *d_grid, 
             }
         }
     }     
-    return sumGrad / (scalar)P0; 
+    return (scalar(FP_MASS))*sumGrad / (scalar)P0; 
 
 }
 
@@ -216,7 +221,7 @@ __global__ void buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *
     atomicAdd(&d_gridCount[gid], 1);
 }
 
-__global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc){
+__global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc, int *d_accumNeighbors, scalar *d_accumPress){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(p >= NUM_PARTICLES){
         return;
@@ -238,10 +243,22 @@ __global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, i
             }
         }
     }     
-    if(ncount <= MIN_NEIGHBORS && d_pcalc[p] == 0) // don't count self
+    if(ncount <= MIN_NEIGHBORS && d_pcalc[p] == 0){ // don't count self
         d_pcalc[p] = P0; 
-    else 
+        #if COUNT_NEIGHBORS > 0
+        atomicAdd(d_accumPress, P0); 
+        #endif
+
+   }
+    else {
         d_pcalc[p] = FP_MASS * press; // Wow I totally forgot that
+        #if COUNT_NEIGHBORS > 0
+        atomicAdd(d_accumPress, FP_MASS * press); 
+        #endif
+    }
+    #if COUNT_NEIGHBORS > 0
+    atomicAdd(d_accumNeighbors, ncount);     
+    #endif
 
 }
 
@@ -305,7 +322,7 @@ __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d
             }
         }
     }
-    d_dpos[p] = dp / (scalar) P0;
+    d_dpos[p] = (scalar) FP_MASS * dp / (scalar) P0;
     //d_dpos[p] = Vector3s(.1, 0, 0);
 }
 
@@ -409,6 +426,12 @@ void initGPUFluid(){
     GPU_CHECKERROR(cudaMalloc((void **)&d_dpos, NUM_PARTICLES * sizeof(Vector3s)));
     GPU_CHECKERROR(cudaMalloc((void **)&d_pcalc, NUM_PARTICLES * sizeof(scalar)));
     GPU_CHECKERROR(cudaMalloc((void **)&d_lambda, NUM_PARTICLES * sizeof(scalar)));
+
+    #if COUNT_NEIGHBORS > 0
+    GPU_CHECKERROR(cudaMalloc((void **)&d_accumNeighbors, sizeof(int)));
+    GPU_CHECKERROR(cudaMalloc((void **)&d_accumPress, sizeof(scalar)));  
+    #endif
+
     #if VORTICITY > 0 
     GPU_CHECKERROR(cudaMalloc((void **)&d_omega, NUM_PARTICLES * sizeof(Vector3s))); 
     #endif
@@ -504,20 +527,33 @@ void buildGrid(){
     buildGrid<<<gridSize, BLOCKSIZE>>>(d_ppos, d_grid, d_gridCount, d_gridInd);
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
+   
+   
 
-     
-    
 
 }
 
 
 
 void calculatePressures(){
+    
+    #if COUNT_NEIGHBORS > 0
+    GPU_CHECKERROR(cudaMemset((void *)d_accumNeighbors, 0, sizeof(int))); 
+    GPU_CHECKERROR(cudaMemset((void *)d_accumPress, 0, sizeof(scalar))); 
+    #endif
+
     int gridSize = ceil((NUM_PARTICLES * 1.0)/(BLOCKSIZE*1.0)); 
-    calcPressures<<<gridSize, BLOCKSIZE>>>(d_ppos, d_grid, d_gridCount, d_gridInd, d_pcalc);  
+    calcPressures<<<gridSize, BLOCKSIZE>>>(d_ppos, d_grid, d_gridCount, d_gridInd, d_pcalc, d_accumNeighbors, d_accumPress);  
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
 
+     #if COUNT_NEIGHBORS > 0
+    GPU_CHECKERROR(cudaMemcpy((void *)&h_accumNeighbors, (void *)d_accumNeighbors, sizeof(int), cudaMemcpyDeviceToHost));
+    GPU_CHECKERROR(cudaMemcpy((void *)&h_accumPress, (void *)d_accumPress, sizeof(scalar), cudaMemcpyDeviceToHost));
+    
+    std::cout << "avg. neighbor count: " << (h_accumNeighbors / NUM_PARTICLES) << std::endl;
+    std::cout << "avg. pressure: " << (h_accumPress / NUM_PARTICLES) << std::endl;
+    #endif
        
 }
 
