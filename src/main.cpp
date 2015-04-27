@@ -161,7 +161,7 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new SerialFluid(50000.0, 190000.0, 1., 3, 100, 3);
+        Fluid *fluid = new SerialFluid(1.0, 1000000.0, .5, 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
@@ -198,7 +198,7 @@ void loadScene( const std::string& file_name) {
 
         g_simulation = new Simulation(scene, stepper, renderer);
         g_dt = 0.01;
-        max_time = 100.0;
+        max_time = 20.0;
     //END PLACEHOLDER
 
     g_simulation->load();
@@ -274,7 +274,8 @@ void stepSystem() {
     else{
         g_simulation->stepSystem(g_dt);
     }
-    std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen << (g_current_step*g_dt) << std::endl;
+    if(g_rendering_enabled)
+        std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen << (g_current_step*g_dt) << std::endl;
     g_current_step++;
 
     #ifdef PNGOUT

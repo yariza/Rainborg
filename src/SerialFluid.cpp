@@ -310,7 +310,7 @@ void SerialFluid::calculatePressures(){
 }
 
 Vector3s SerialFluid::calcGradConstraint(Vector3s& pi, Vector3s& pj){
-    return wSpikyKernelGrad(pi, pj, m_h) / (- m_p0); 
+    return (scalar)(m_fpmass) * wSpikyKernelGrad(pi, pj, m_h) / (- m_p0); 
 }
 
 Vector3s SerialFluid::calcGradConstraintAtI(int p){
@@ -330,7 +330,7 @@ Vector3s SerialFluid::calcGradConstraintAtI(int p){
     }       
     
         
-    return sumGrad / m_p0; 
+    return (scalar)(m_fpmass) * sumGrad / m_p0; 
 
 }
 
@@ -385,7 +385,7 @@ void SerialFluid::calculatedPos(){
                 }
             }
         }        
-        m_dpos[p] = dp / m_p0;    
+        m_dpos[p] = (scalar)(m_fpmass) * dp / m_p0;    
     }
 }
 

@@ -53,8 +53,8 @@ Vector3s wSpikyKernelGrad(Vector3s &pi, Vector3s &pj, scalar h){
     scalar r = glm::length(dp);  
     if(r > h || r < 0)
         return Vector3s(0.0, 0.0, 0.0); 
-    scalar scale = -45.0 / (PI * h * h * h * h * h * h) * (h - r) * (h - r); 
-    return scale * dp; 
+    scalar scale = 45.0 / (PI * h * h * h * h * h * h) * (h - r) * (h - r); 
+    return scale * dp / (scalar)(r + .001); 
 }
 
 

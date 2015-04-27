@@ -94,30 +94,33 @@ scalar FluidBoundingBox::depth(){
 void FluidBoundingBox::dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numParticles){    
     scalar pposX; 
     scalar pposY; 
-    scalar pposZ; 
-    
+    scalar pposZ;   
+    scalar shift;    
+ 
     for(int i = 0; i < numParticles; ++i){
         pposX = pos[i][0] + dpos[i][0];
         pposY = pos[i][1] + dpos[i][1];
         pposZ = pos[i][2] + dpos[i][2]; 
         
+        shift = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/1.0)/100.f; 
+
         if(pposX < m_minX + m_eps){
-            dpos[i][0] = m_minX + m_eps - pos[i][0];
+            dpos[i][0] = m_minX + m_eps + shift - pos[i][0];
         }
         else if(pposX > m_maxX - m_eps){
-            dpos[i][0] = m_maxX - m_eps - pos[i][0]; 
+            dpos[i][0] = m_maxX - m_eps - shift - pos[i][0]; 
         }
         if(pposY < m_minY + m_eps){
-            dpos[i][1] = m_minY + m_eps - pos[i][1];
+            dpos[i][1] = m_minY + m_eps + shift - pos[i][1];
         }
         else if(pposY > m_maxY - m_eps){
-            dpos[i][1] = m_maxY - m_eps - pos[i][1];
+            dpos[i][1] = m_maxY - m_eps - shift - pos[i][1];
         }
         if(pposZ < m_minZ + m_eps){
-            dpos[i][2] = m_minZ + m_eps - pos[i][2];
+            dpos[i][2] = m_minZ + m_eps + shift - pos[i][2];
         }
         else if(pposZ > m_maxZ - m_eps){
-            dpos[i][2] = m_maxZ - m_eps - pos[i][2];
+            dpos[i][2] = m_maxZ - m_eps - shift- pos[i][2];
         }
    }
 }
