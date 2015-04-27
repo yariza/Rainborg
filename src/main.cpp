@@ -68,6 +68,11 @@ double g_last_time = timingutils::seconds();
 int g_num_steps = 0;
 scalar g_dt = 0.0;
 
+// Timing
+double totalTime = 0;
+double avgTime = 0;
+struct timeval startTime, endTime;
+
 // Simulation state
 bool g_paused = true;
 int g_current_step = 0;
@@ -80,61 +85,17 @@ std::string g_description;
 // gpu mode?
 bool g_gpu_mode;
 
-void testBasicSetup(){
-    // I guess.... try initializing a scene?
 
-    //initGPUFluid();
-
-
-    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
-    //FluidSimpleGravityForce* sgff = new FluidSimpleGravityForce(Vector3s(.3, .2, .1));
-
-    Scene scene;
-    scene.insertFluidForce(sgf);
-    //scene.insertFluidForce(sgff);
-
-    FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10);
-
-    Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3);
-
-    FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
-    fluid->insertFluidVolume(volume);
-
-
-    //fluid.setFPMass(2.0);
-    //fluid.setRestDensity(1.0);
-    // float x;
-    // float y;
-    // float z;
-    // for(int i = 0; i < 1000; ++i){
-    //     x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-    //     y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-    //     z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-    //     fluid->setFPPos(i, Vector3s(x, y, z));
-    //     fluid->setFPVel(i, Vector3s(0, 0, 0));
-    // }
-   //fluid->setFPPos(1, Vector3s(.2, .2, .1));
-    //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
-    fluid->setBoundingBox(fbox);
-
-    // printVec3(Vector3s(-0.3, 1, 3));
-
-    std::cout << "adding fluid to scene" << std::endl;
-
-    scene.insertFluid(fluid);
-
-    FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
-    scene.insertFluidBoundary(fbrick);
-
-    Stepper stepper;
-
-    stepper.stepScene(scene, .01);
-
-    //FluidBoundingBox fbox;
-//    std::cout << fbox.minX() << std::endl;
-
-    std::cout << "end test" << std::endl;
+void printTimingResults(){
+    gettimeofday(&endTime, 0);
+    
+    totalTime = (1000000.0*(endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec))/1000.0; // milliseconds
+    avgTime = totalTime / g_current_step; 
+    std::cout << "Total time: " << totalTime << " ms" << std::endl;
+    std::cout << "Avg. frame time: " << avgTime << " ms" << std::endl;
 }
+
+
 
 void parseCommandLine(int argc, char **argv) {
 
@@ -237,7 +198,7 @@ void loadScene( const std::string& file_name) {
 
         g_simulation = new Simulation(scene, stepper, renderer);
         g_dt = 0.01;
-        max_time = 100.0;
+        max_time = 10.0;
     //END PLACEHOLDER
 
     g_simulation->load();
@@ -277,10 +238,14 @@ int main(int args, char **argv)
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
     std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
 
+    gettimeofday(&startTime, 0);
+
     if (g_rendering_enabled)
         g_viewer->mainLoop();
     else
         headlessSimLoop();
+
+    printTimingResults();
 
     return 0;
 }
@@ -295,8 +260,10 @@ void stepSystem() {
         #ifdef GPU_ENABLED
         cleanUpGPUFluid();
         #endif
+        printTimingResults();
+ 
         exit(0);
-    }
+   }
 
       // Step the system forward in time
     if(g_gpu_mode){
