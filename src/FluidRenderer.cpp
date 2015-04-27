@@ -105,7 +105,8 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
         #ifdef GPU_ENABLED
         GPU_CHECKERROR(cudaGLMapBufferObject((void**)&dptrvert, vbo));
-        updateVBOGPUFluid(dptrvert); // update content inside vbo object - implement this method in kernel!
+        m_fluid->updateVBO(dptrvert);
+        // updateVBOGPUFluid(dptrvert); // update content inside vbo object - implement this method in kernel!
         GPU_CHECKERROR(cudaGLUnmapBufferObject(vbo));
 
         glEnableVertexAttribArray(position_location);

@@ -16,8 +16,11 @@ struct FluidVolume {
     fluid_volume_mode_t m_mode;
     bool m_random;
 
+    FluidVolume();
     FluidVolume(scalar minX, scalar maxX, scalar minY, scalar maxY, scalar minZ, scalar maxZ,
                 int numParticles, fluid_volume_mode_t mode, bool random);
+    FluidVolume(const FluidVolume& otherVolume);
+    
     void setParticlePositions(Vector3s* pos, int offset);
 };
 

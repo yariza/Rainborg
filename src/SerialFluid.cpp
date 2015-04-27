@@ -508,3 +508,6 @@ void SerialFluid::applydPToPredPos(){
     }
 }
 
+void SerialFluid::updateVBO(float* dptrvert)
+{
+}

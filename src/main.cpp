@@ -9,6 +9,7 @@
 #include "FluidSimpleGravityForce.h"
 #include "FluidBoundingBox.h"
 #include "FluidBrick.h"
+#include "GridGPUFluid.h"
 #include "MathDefs.h"
 #include "StringUtilities.h"
 #include "SceneXMLParser.h"
@@ -20,7 +21,7 @@
 #include "YImage.h"
 
 #ifdef GPU_ENABLED
-#include "gpu/GPUFluidNaive.h"
+// #include "gpu/GPUFluidNaive.h"
 #include <cuda.h>
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
@@ -95,7 +96,8 @@ void testBasicSetup(){
 
     FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10);
 
-    Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3);
+    // Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3);
+    Fluid *fluid = new GridGPUFluid(2.0, 10000, .5, 3, 100, 3);
 
     FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
     fluid->insertFluidVolume(volume);
@@ -200,7 +202,7 @@ void loadScene( const std::string& file_name) {
 
         FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new SerialFluid(50000.0, 190000.0, 1., 3, 100, 3);
+        Fluid *fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
@@ -252,11 +254,13 @@ void loadScene( const std::string& file_name) {
     g_current_step = 0;
 }
 
+bool loaded = false;
+
 int main(int args, char **argv)
 {
     srand(time(NULL));
     #ifdef GPU_ENABLED
-    initGPUFluid();
+    // initGPUFluid();
     #endif
 
     parseCommandLine(args, argv);
@@ -267,12 +271,13 @@ int main(int args, char **argv)
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
 
+    loadScene(g_xml_scene_file);
+
     #ifdef GPU_ENABLED
     GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
     #endif
- 
 
-    loadScene(g_xml_scene_file);
+    loaded = true;
 
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
     std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
@@ -293,7 +298,7 @@ void stepSystem() {
         std::cout << outputmod::startpink << "PBF message: " << outputmod::endpink << "Simulation complete at time " << g_current_step*g_dt << ". Exiting." << std::endl;
         g_simulation_ran_to_completion = true;
         #ifdef GPU_ENABLED
-        cleanUpGPUFluid();
+        // cleanUpGPUFluid();
         #endif
         exit(0);
     }
@@ -301,8 +306,9 @@ void stepSystem() {
       // Step the system forward in time
     if(g_gpu_mode){
         #ifdef GPU_ENABLED
-        stepSystemGPUFluid(g_dt);
+        // stepSystemGPUFluid(g_dt);
         #endif
+        g_simulation->stepSystem(g_dt);
     }
     else{
         g_simulation->stepSystem(g_dt);
@@ -403,8 +409,10 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
 // Display the scene
 void display(int width, int height) {
-
+        if (loaded)
     g_simulation->display(g_viewer, width, height);
+        else
+            std::cout << "not loaded" << std::endl;
 }
 
 void errorCallback(int error, const char* description)

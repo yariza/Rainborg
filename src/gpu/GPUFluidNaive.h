@@ -2,7 +2,6 @@
 #ifndef GPU_FLUID_THING_H__
 #define GPU_FLUID_THING_H__
 
-#include <cuda.h>
 #include <iostream>
 #include <stdio.h>
 #include <vector>

@@ -37,6 +37,8 @@ public:
     virtual const FluidBoundingBox& getBoundingBox() const;
     virtual const std::vector<FluidVolume>& getFluidVolumes() const;
 
+    virtual void updateVBO(float* dptr) = 0;
+
 protected:
 
     scalar m_fpmass;

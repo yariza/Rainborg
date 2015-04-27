@@ -27,6 +27,7 @@ public:
     virtual void setColor(int i, const Vector4s& col); 
 
     virtual void loadFluidVolumes();
+    virtual void updateVBO(float* vboptr);
 
     //scalar* getFPPos() const;
     //scalar* getFPVel() const;
