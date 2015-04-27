@@ -17,17 +17,6 @@ __constant__ int GRIDY;
 __constant__ int GRIDZ;
 __constant__ scalar QSCALE; // for artificial pressure term 
 
-struct particle{
-    Vector3s pos; 
-    Vector3s vel;
-    Vector3s ppos;
-    Vector3s dpos;
-    Vector3s omega;
-    scalar pcalc;
-    scalar lambda;
-    int gridInd;
-};
-
 Vector3s *d_pos;
 Vector3s *d_vel; 
 Vector3s *d_ppos;
