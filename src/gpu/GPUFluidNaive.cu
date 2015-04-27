@@ -53,10 +53,10 @@ __device__ __host__ scalar wPoly6Kernel(Vector3s pi, Vector3s pj){
 __device__ __host__ Vector3s wSpikyKernelGrad(Vector3s pi, Vector3s pj){
     Vector3s dp = pi - pj; 
     scalar r = glm::length(dp);  
-    if(r > H || r < 0)
+    if(r > H || r <= 0)
         return Vector3s(0.0, 0.0, 0.0); 
-    scalar scale = 45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r); 
-    return scale * dp; 
+    scalar scale = -45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r); 
+    return scale * dp / r; 
 }
 
 __device__ void getGridIdx(Vector3s pos, int* i, int *j, int *k){
@@ -229,12 +229,13 @@ __global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, i
     scalar press = 0;
     int ncount = 0;
     int gi;
+    Vector3s pi = d_ppos[p]; 
     for(int i = max(0, d_gridInd[p*3]-1); i <= min(GRIDX-1, d_gridInd[p*3]+1); ++i){
         for(int j = max(0, d_gridInd[p*3+1]-1); j <= min(GRIDY-1, d_gridInd[p*3+1]+1); ++j){
             for(int k = max(0, d_gridInd[p*3+2]-1); k <= min(GRIDZ-1, d_gridInd[p*3+2]+1); ++k){
                 gi = get1DGridIdx(i, j, k);
                 for(int n = 0; n < d_gridCount[gi]; ++n){ // for all particles in the grid
-                    scalar pressN = wPoly6Kernel(d_ppos[p], d_ppos[d_grid[gi * MAX_NEIGHBORS + n]]); 
+                    scalar pressN = wPoly6Kernel(pi, d_ppos[d_grid[gi * MAX_NEIGHBORS + n]]); 
                     press += pressN;
                     if(pressN > 0)
                         ++ ncount; 
