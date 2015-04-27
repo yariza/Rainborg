@@ -11,6 +11,7 @@ public:
     SceneRenderer(Scene* scene);
     ~SceneRenderer();
 
+    void loadRenderers();
     virtual void render(openglframework::GLFWViewer* viewer, int width, int height);
     void toggleDebugMode();
 

@@ -26,6 +26,10 @@ void Simulation::load() {
     m_scene->load();
 }
 
+void Simulation::prepareForRender() {
+    m_renderer->loadRenderers();
+}
+
 void Simulation::stepSystem(const scalar& dt) {
 
     m_stepper->stepScene(*m_scene, dt);

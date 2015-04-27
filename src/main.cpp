@@ -264,20 +264,18 @@ int main(int args, char **argv)
     #endif
 
     parseCommandLine(args, argv);
+    loadScene(g_xml_scene_file);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
     // testBasicSetup();
-
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
-
-    loadScene(g_xml_scene_file);
 
     #ifdef GPU_ENABLED
     GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
     #endif
 
-    loaded = true;
+    g_simulation->prepareForRender();
 
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
     std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
@@ -409,10 +407,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
 // Display the scene
 void display(int width, int height) {
-        if (loaded)
     g_simulation->display(g_viewer, width, height);
-        else
-            std::cout << "not loaded" << std::endl;
 }
 
 void errorCallback(int error, const char* description)

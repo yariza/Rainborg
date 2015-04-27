@@ -12,6 +12,7 @@ public:
     ~Simulation();
 
     void load();
+    void prepareForRender();
     void stepSystem(const scalar& dt);
 
     // display functions

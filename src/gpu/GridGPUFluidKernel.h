@@ -15,8 +15,8 @@ typedef struct {
 } grid_gpu_block_t;
 
 extern "C" {
-  void grid_initGPUFluid(Vector3s *g_pos, Vector3s *g_vel,
-                         int *g_neighbors, int *g_gridIndex,
+  void grid_initGPUFluid(Vector3s **g_pos, Vector3s **g_vel,
+                         int **g_neighbors, int **g_gridIndex,
                          FluidVolume* h_volumes, int num_volumes);
 
   void grid_updateVBO(float *vboptr, Vector3s *g_pos, int num_particles);

@@ -45,6 +45,7 @@ FluidVolume::FluidVolume(const FluidVolume& otherVolume) {
     m_numParticles = otherVolume.m_numParticles;
     m_mode = otherVolume.m_mode;
     m_random = otherVolume.m_random;
+    m_dens_cbrt = otherVolume.m_dens_cbrt;
 }
 
 void FluidVolume::setParticlePositions(Vector3s* pos, int offset) {

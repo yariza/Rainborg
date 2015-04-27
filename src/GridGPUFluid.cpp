@@ -5,7 +5,6 @@ GridGPUFluid::GridGPUFluid(scalar mass, scalar p0, scalar h, int iters, int maxN
 : Fluid(mass, p0, h, iters, maxNeighbors, minNeighbors)
 , m_eps(0.01)
 {
-  std::cout << "hi!" << std::endl;
 }
 
 GridGPUFluid::GridGPUFluid(GridGPUFluid& otherFluid)
@@ -30,9 +29,11 @@ void GridGPUFluid::loadFluidVolumes() {
     h_volumes[i] = m_volumes[i];
   }
 
-  grid_initGPUFluid(d_pos, d_vel,
-                    d_neighbors, d_gridIndex,
+  grid_initGPUFluid(&d_pos, &d_vel,
+                    &d_neighbors, &d_gridIndex,
                     h_volumes, m_volumes.size());
+
+
 }
 
 void GridGPUFluid::updateVBO(float* dptrvert) {

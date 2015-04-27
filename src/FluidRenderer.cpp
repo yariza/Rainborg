@@ -35,19 +35,20 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
 
     if (g_gpu_mode) {
       #ifdef GPU_ENABLED
-        vertices = new GLfloat[4 * NUM_PARTICLES];
-        indices = new GLuint[NUM_PARTICLES];
+      int num_particles = fluid->getNumParticles();
+      vertices = new GLfloat[4 * num_particles];
+      indices = new GLuint[num_particles];
 
         GLfloat x, y, z;
-        for (int i=0; i<NUM_PARTICLES; i++) {
-            x = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
-            y = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
-            z = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
+        for (int i=0; i<fluid->getNumParticles(); i++) {
+            // x = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
+            // y = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
+            // z = static_cast <GLfloat> (rand()) / static_cast<GLfloat>(RAND_MAX/9.0);
 
-            vertices[i*4 + 0] = x;
-            vertices[i*4 + 1] = y;
-            vertices[i*4 + 2] = z;
-            vertices[i*4 + 3] = 1.0f;
+            // vertices[i*4 + 0] = x;
+            // vertices[i*4 + 1] = y;
+            // vertices[i*4 + 2] = z;
+            // vertices[i*4 + 3] = 1.0f;
 
             indices[i] = i;
         }
@@ -56,11 +57,11 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
         glGenBuffers(1, &ibo);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, 4*NUM_PARTICLES*sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 4*num_particles*sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUM_PARTICLES*sizeof(GLuint), indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_particles*sizeof(GLuint), indices, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         //GPU_CHECKERROR(cudaDeviceReset());        
@@ -80,6 +81,10 @@ FluidRenderer::~FluidRenderer() {
 }
 
 void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
+
+  if (g_gpu_mode) {
+    
+  }
 
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
