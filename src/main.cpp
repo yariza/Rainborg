@@ -69,6 +69,11 @@ double g_last_time = timingutils::seconds();
 int g_num_steps = 0;
 scalar g_dt = 0.0;
 
+// Timing
+double totalTime = 0;
+double avgTime = 0;
+struct timeval startTime, endTime;
+
 // Simulation state
 bool g_paused = true;
 int g_current_step = 0;
@@ -125,22 +130,18 @@ void testBasicSetup(){
 
     // printVec3(Vector3s(-0.3, 1, 3));
 
-    std::cout << "adding fluid to scene" << std::endl;
-
-    scene.insertFluid(fluid);
-
-    FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
-    scene.insertFluidBoundary(fbrick);
-
-    Stepper stepper;
-
-    stepper.stepScene(scene, .01);
-
-    //FluidBoundingBox fbox;
-//    std::cout << fbox.minX() << std::endl;
-
-    std::cout << "end test" << std::endl;
 }
+
+void printTimingResults(){
+    gettimeofday(&endTime, 0);
+    
+    totalTime = (1000000.0*(endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec))/1000.0; // milliseconds
+    avgTime = totalTime / g_current_step; 
+    std::cout << "Total time: " << totalTime << " ms" << std::endl;
+    std::cout << "Avg. frame time: " << avgTime << " ms" << std::endl;
+}
+
+
 
 void parseCommandLine(int argc, char **argv) {
 
@@ -291,10 +292,14 @@ int main(int args, char **argv)
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
     std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
 
+    gettimeofday(&startTime, 0);
+
     if (g_rendering_enabled)
         g_viewer->mainLoop();
     else
         headlessSimLoop();
+
+    printTimingResults();
 
     return 0;
 }
@@ -309,8 +314,10 @@ void stepSystem() {
         #ifdef GPU_ENABLED
         // cleanUpGPUFluid();
         #endif
+        printTimingResults();
+ 
         exit(0);
-    }
+   }
 
       // Step the system forward in time
     if(g_gpu_mode){
