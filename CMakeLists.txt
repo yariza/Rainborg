@@ -65,14 +65,24 @@ set( pdf_INCLUDE_DIRS ${pdf_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/include/openglfram
 
 if (GPU_ENABLED)
     find_package(CUDA)
-    # nvcc flags
-    #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_20,code=sm_20)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -arch=sm_20)
-    append_files(CudaFiles "cu" /src /src/gpu)
-    #cuda_compile(CUDA_O ${CudaFiles})
-    # add def for program to check
-    add_definitions(-DGPU_ENABLED)
-    set( pdf_INCLUDE_DIRS ${pdf_INCLUDE_DIRS} ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc)
+    find_package(CUDAThrust)
+    if ( CUDA_FOUND AND CUDATHRUST_FOUND )
+      # nvcc flags
+      #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_20,code=sm_20)
+      set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -arch=sm_20)
+      append_files(CudaFiles "cu" /src /src/gpu)
+      #cuda_compile(CUDA_O ${CudaFiles})
+      # add def for program to check
+      add_definitions(-DGPU_ENABLED)
+      set( pdf_INCLUDE_DIRS ${pdf_INCLUDE_DIRS} ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc ${CUDATHRUST_INCLUDE_DIR})
+    else (CUDA_FOUND AND CUDATHRUST_FOUND)
+      if (NOT CUDA_FOUND)
+        message(SEND_ERROR "CUDA not found!")
+      endif (NOT CUDA_FOUND)
+      if (NOT CUDATHRUST_FOUND)
+        message(SEND_ERROR "Thrust not found!")
+      endif (NOT CUDATHRUST_FOUND)
+    endif (CUDA_FOUND AND CUDATHRUST_FOUND)
 endif (GPU_ENABLED)
 
 if (GPU_ENABLED)
