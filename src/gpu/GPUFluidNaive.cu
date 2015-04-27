@@ -1,11 +1,9 @@
 #ifdef GPU_ENABLED
-#include "GPUFluidLessNaive.h"
+#include "GPUFluidNaive.h"
 
 #define BLOCKSIZE 256
 
-namespace gpu_less_naive{
 bool deviceHappy = true; 
-}
 
 #define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
 static void gpuCheckError(cudaError_t err, const char *file, int line){
