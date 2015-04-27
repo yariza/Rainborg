@@ -3,7 +3,7 @@
 
 #define BLOCKSIZE 256
 
-bool deviceHappy = false; 
+bool deviceHappy = true; 
 
 #define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
 static void gpuCheckError(cudaError_t err, const char *file, int line){
@@ -362,7 +362,7 @@ __global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d
                 gi = get1DGridIdx(i, j, k);
                 for(int n = 0; n < d_gridCount[gi]; ++n){ // for all particles in the grid
                     q = d_grid[gi * MAX_NEIGHBORS + n];
-                    vij = vi - d_vel[q];
+                    vij = d_vel[q]-vi;
                     pj = d_pos[q]; 
                     dv += vij * wPoly6Kernel(pi, pj);    
 
@@ -406,14 +406,14 @@ __global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ome
                     pj = d_pos[q]; 
                     dp = pj - pi; 
                     dom = glm::length(omega - d_omega[q]);     
-                    vort[0] += dom / dp[0];
-                    vort[1] += dom / dp[1];
-                    vort[2] += dom / dp[2];                      
+                    vort[0] += dom / (dp[0]+.001);
+                    vort[1] += dom / (dp[1]+.001);
+                    vort[2] += dom / (dp[2]+.001);                      
                 }
             }
         }
     }
-    vort /= (glm::length(vort) + EPS);     
+    vort /= (glm::length(vort) + EPS);    
     d_vel[p] += (scalar)(dt * VORT_EPS / FP_MASS) * (glm::cross(vort, omega)); 
 
 }
@@ -611,6 +611,7 @@ void adjustVel(scalar dt){
 void stepSystemGPUFluid(scalar dt){
     if(!deviceHappy)
         return;
+
 
     updatePredFromForce(dt);    
 
