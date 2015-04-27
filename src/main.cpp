@@ -215,6 +215,7 @@ void loadScene( const std::string& file_name) {
         }
         else
             fluid = new SerialFluid(50000.0, 190000.0, 1., 3, 100, 3);
+        
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
@@ -334,6 +335,7 @@ void stepSystem() {
         std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen
                   << (g_current_step*g_dt) << std::endl;
     }
+    
     g_current_step++;
 
     #ifdef PNGOUT
