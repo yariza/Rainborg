@@ -53,10 +53,11 @@ __device__ __host__ scalar wPoly6Kernel(Vector3s pi, Vector3s pj){
 __device__ __host__ Vector3s wSpikyKernelGrad(Vector3s pi, Vector3s pj){
     Vector3s dp = pi - pj; 
     scalar r = glm::length(dp);  
-    if(r > H || r <= 0)
+    if(r > H || r < 0)
         return Vector3s(0.0, 0.0, 0.0); 
-    scalar scale = -45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r); 
-    return scale * dp / r; 
+    scalar scale = 45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r); 
+    return scale * dp / (r+.0001f); 
+//    return scale * dp; 
 }
 
 __device__ void getGridIdx(Vector3s pos, int* i, int *j, int *k){
@@ -72,7 +73,7 @@ __device__ int get1DGridIdx(int i, int j, int k){
 
 
 __device__ Vector3s calcGradConstraint(Vector3s pi, Vector3s pj){
-    return (scalar(FP_MASS))*wSpikyKernelGrad(pi, pj)/(scalar(- P0)); 
+    return (scalar(USE_MASS))*wSpikyKernelGrad(pi, pj)/(scalar(- P0)); 
 }
 
 __device__ Vector3s calcGradConstraintAtI(int p, Vector3s* d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd){
@@ -89,7 +90,7 @@ __device__ Vector3s calcGradConstraintAtI(int p, Vector3s* d_ppos, int *d_grid, 
             }
         }
     }     
-    return (scalar(FP_MASS))*sumGrad / (scalar)P0; 
+    return (scalar(USE_MASS))*sumGrad / (scalar)P0; 
 
 }
 
@@ -135,28 +136,29 @@ __global__ void preserveFluidBoundaryWithUpdate(Vector3s* d_pos, Vector3s* d_ppo
     scalar pposY = d_ppos[i][1] + d_dpos[i][1];
     scalar pposZ = d_ppos[i][2] + d_dpos[i][2]; 
 
+    scalar shift = (i%124 )* 1.0/10000.0; 
     if(pposX < XMIN + EPS){
-        d_dpos[i][0] = XMIN + EPS - d_ppos[i][0];
+        d_dpos[i][0] = XMIN + EPS + shift - d_ppos[i][0];
         d_ppos[i][0] += d_dpos[i][0];
     }
-    else if(pposX > XMAX - EPS){
-        d_dpos[i][0] = XMAX - EPS - d_ppos[i][0]; 
+    else if(pposX > XMAX - EPS){ 
+        d_dpos[i][0] = XMAX - EPS - shift- d_ppos[i][0]; 
         d_ppos[i][0] += d_dpos[i][0];
     }
     if(pposY < YMIN + EPS){
-        d_dpos[i][1] = YMIN + EPS - d_ppos[i][1];
+        d_dpos[i][1] = YMIN + EPS + shift  - d_ppos[i][1];
         d_ppos[i][1] += d_dpos[i][1];
     }
     else if(pposY > YMAX - EPS){
-        d_dpos[i][1] = YMAX - EPS - d_ppos[i][1];
+        d_dpos[i][1] = YMAX - EPS - shift - d_ppos[i][1];
         d_ppos[i][1] += d_dpos[i][1];
     }
     if(pposZ < ZMIN + EPS){
-        d_dpos[i][2] = ZMIN + EPS - d_ppos[i][2];
+        d_dpos[i][2] = ZMIN + EPS + shift - d_ppos[i][2];
         d_ppos[i][2] += d_dpos[i][2];
     }
     else if(pposZ > ZMAX - EPS){
-        d_dpos[i][2] = ZMAX - EPS - d_ppos[i][2];
+        d_dpos[i][2] = ZMAX - EPS - shift - d_ppos[i][2];
         d_ppos[i][2] += d_dpos[i][2];
     }
 }
@@ -169,24 +171,25 @@ __global__ void preserveFluidBoundary(Vector3s *d_pos, Vector3s *d_ppos, Vector3
     scalar pposX = d_ppos[i][0] + d_dpos[i][0];
     scalar pposY = d_ppos[i][1] + d_dpos[i][1];
     scalar pposZ = d_ppos[i][2] + d_dpos[i][2]; 
-
+    scalar shift = (i%124 )* 1.0/10000.0; 
+ 
     if(pposX < XMIN + EPS){
-        d_dpos[i][0] = XMIN + EPS - d_ppos[i][0];
+        d_dpos[i][0] = XMIN + EPS + shift - d_ppos[i][0];
     }
     else if(pposX > XMAX - EPS){
-        d_dpos[i][0] = XMAX - EPS - d_ppos[i][0]; 
+        d_dpos[i][0] = XMAX - EPS - shift - d_ppos[i][0]; 
     }
     if(pposY < YMIN + EPS){
-        d_dpos[i][1] = YMIN + EPS - d_ppos[i][1];
+        d_dpos[i][1] = YMIN + EPS + shift - d_ppos[i][1];
     }
     else if(pposY > YMAX - EPS){
-        d_dpos[i][1] = YMAX - EPS - d_ppos[i][1];
+        d_dpos[i][1] = YMAX - EPS - shift - d_ppos[i][1];
     }
     if(pposZ < ZMIN + EPS){
-        d_dpos[i][2] = ZMIN + EPS - d_ppos[i][2];
+        d_dpos[i][2] = ZMIN + EPS + shift - d_ppos[i][2];
     }
     else if(pposZ > ZMAX - EPS){
-        d_dpos[i][2] = ZMAX - EPS - d_ppos[i][2];
+        d_dpos[i][2] = ZMAX - EPS - shift - d_ppos[i][2];
     }
 }
 
@@ -323,7 +326,7 @@ __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d
             }
         }
     }
-    d_dpos[p] = (scalar) FP_MASS * dp / (scalar) P0;
+    d_dpos[p] = (scalar) USE_MASS * dp / (scalar) P0;
     //d_dpos[p] = Vector3s(.1, 0, 0);
 }
 
@@ -411,7 +414,7 @@ __global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ome
         }
     }
     vort /= (glm::length(vort) + EPS);     
-    //d_vel[p] += (scalar)(dt * VORT_EPS / FP_MASS) * (glm::cross(vort, omega)); 
+    d_vel[p] += (scalar)(dt * VORT_EPS / FP_MASS) * (glm::cross(vort, omega)); 
 
 }
 

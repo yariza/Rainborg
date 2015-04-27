@@ -198,7 +198,7 @@ void loadScene( const std::string& file_name) {
 
         g_simulation = new Simulation(scene, stepper, renderer);
         g_dt = 0.01;
-        max_time = 10.0;
+        max_time = 100.0;
     //END PLACEHOLDER
 
     g_simulation->load();
