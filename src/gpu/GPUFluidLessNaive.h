@@ -1,11 +1,11 @@
 #ifdef GPU_ENABLED
-#ifndef GPU_FLUID_THING_LESS_NAIVE_H__
-#define GPU_FLUID_THING_LESS_NAIVE_H__
+#ifndef GPU_FLUID_THING_H__
+#define GPU_FLUID_THING_H__
 
+#include <cuda.h>
 #include <iostream>
 #include <stdio.h>
 #include <vector>
-#include <cuda.h>
 #include <glm/glm.hpp>
 #include <curand.h>
 #include <curand_kernel.h>

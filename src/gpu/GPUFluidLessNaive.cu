@@ -1,11 +1,9 @@
 #ifdef GPU_ENABLED
-#include "GPUFluidLessNaive.h"
+#include "GPUFluidNaive.h"
 
 #define BLOCKSIZE 256
 
-namespace gpu_less_naive{
 bool deviceHappy = true; 
-}
 
 #define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
 static void gpuCheckError(cudaError_t err, const char *file, int line){
@@ -14,21 +12,11 @@ static void gpuCheckError(cudaError_t err, const char *file, int line){
     }   
 }
 
+
 __constant__ int GRIDX; 
 __constant__ int GRIDY;
 __constant__ int GRIDZ;
 __constant__ scalar QSCALE; // for artificial pressure term 
-
-struct particle{
-    Vector3s pos; 
-    Vector3s vel;
-    Vector3s ppos;
-    Vector3s dpos;
-    Vector3s omega;
-    scalar pcalc;
-    scalar lambda;
-    int gridInd;
-};
 
 Vector3s *d_pos;
 Vector3s *d_vel; 
