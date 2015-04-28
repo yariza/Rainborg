@@ -158,7 +158,7 @@ void loadScene( const std::string& file_name) {
     //PLACEHOLDER
         Scene *scene = new Scene();
 
-    #if NAIVE == 0
+   // #if NAIVE == 0
         FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(0, -10.0, 0);
         scene->insertFluidForce(sgf);
 
@@ -191,7 +191,7 @@ void loadScene( const std::string& file_name) {
         FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
         scene->insertFluidBoundary(fbrick);
 
-    #endif
+    //#endif
 
         Stepper *stepper = new Stepper();
 
@@ -226,7 +226,6 @@ int main(int args, char **argv)
     #ifdef GPU_ENABLED
     if(g_gpu_mode){
         #if NAIVE > 0
-        std::cout << "yo init" << std::endl;
         initGPUFluid();
         #endif
     }

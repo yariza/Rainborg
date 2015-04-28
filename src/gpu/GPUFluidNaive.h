@@ -14,7 +14,7 @@ typedef float scalar;
 typedef glm::vec3 Vector3s;
 typedef glm::vec4 Vector4s;
 
-#define NUM_PARTICLES 300000
+#define NUM_PARTICLES 30000
 #define MAX_NEIGHBORS 300
 #define MIN_NEIGHBORS 3
 #define COUNT_NEIGHBORS 0
