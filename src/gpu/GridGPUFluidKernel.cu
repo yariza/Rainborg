@@ -9,9 +9,9 @@
 #include <thrust/execution_policy.h>
 
 const int kgrid_BLOCKSIZE_1D = 512;
-const int kgrid_BLOCKSIZE_3D = 8;
+const int kgrid_BLOCKSIZE_REDUCED = 256;
 const int kgrid_NUM_NEIGHBORS = 5;
-const int kgrid_MAX_CELL_SIZE = 50;
+const int kgrid_MAX_CELL_SIZE = 20;
 
 bool grid_deviceHappy = true;
 
@@ -39,10 +39,21 @@ __constant__ int c_gridSizeZ;
 // helper functions for getting grid indices
 __device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k);
 __device__ int kgrid_getGridIndex(int i, int j, int k);
+__device__ void kgrid_getGridLocationFromIndex(int id, int &i, int &j, int &k);
 
 // helper function for getting grid size
 __host__ void hgrid_getGridSize(FluidBoundingBox* fbox, scalar h,
                                int &gridSizeX, int &gridSizeY, int &gridSizeZ);
+
+// helper function for getting k nearest neighbors
+__host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
+                                          int **g_grid,
+                                          int **g_gridUniqueIndex, int **g_partUniqueIndex,
+                                          grid_gpu_block_t **g_particles,
+                                          int num_particles,
+                                          scalar h,
+                                          int grid_size,
+                                          int *grid_unique_size);
 
 __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k);
 
@@ -71,6 +82,15 @@ __global__ void kgrid_setGridCells(int *g_gridIndex,
                                    int num_particles,
                                    int *g_grid,
                                    int num_cells);
+
+// find k nearest neighbors
+__global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
+                                            int num_particles,
+                                            int *g_neighbors,
+                                            int *g_gridIndex,
+                                            int *g_grid,
+                                            int num_cells,
+                                            scalar h);
 
 // TODO
 
@@ -260,6 +280,7 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                     Vector3s accumForce,
                     scalar dt) {
 
+
     int gridSizeX, gridSizeY, gridSizeZ;
     hgrid_getGridSize(h_boundingBox, h, gridSizeX, gridSizeY, gridSizeZ);
     int grid_size = gridSizeX*gridSizeY*gridSizeZ;
@@ -274,6 +295,51 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
 
 
     // step 2: find k nearest neighbors
+    int grid_unique_size;
+    hgrid_findKNearestNeighbors(g_neighbors, g_gridIndex,
+                                g_grid,
+                                g_gridUniqueIndex, g_partUniqueIndex,
+                                g_particles,
+                                num_particles,
+                                h,
+                                grid_size,
+                                &grid_unique_size);
+
+    GPU_CHECKERROR(cudaDeviceSynchronize());
+
+
+
+    // TODO
+
+    // step 7: update velocity
+    kgrid_updateVelocity <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                      >>> (*g_particles, num_particles, dt);
+    GPU_CHECKERROR(cudaGetLastError());
+
+
+    // step 9: update position
+    kgrid_updatePosition <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                      >>> (*g_particles, num_particles);
+    GPU_CHECKERROR(cudaGetLastError());
+
+
+
+    GPU_CHECKERROR(cudaDeviceSynchronize());
+}
+
+// find k nearest neighbors
+
+__host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
+                                          int **g_grid,
+                                          int **g_gridUniqueIndex, int **g_partUniqueIndex,
+                                          grid_gpu_block_t **g_particles,
+                                          int num_particles,
+                                          scalar h,
+                                          int grid_size,
+                                          int *grid_unique_size) {
+    int blocksPerParticles = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
+    int blocksPerGridCells = ceil(grid_size / (kgrid_BLOCKSIZE_1D*1.0));
+    int blocksPerPartReduced = ceil(num_particles / (kgrid_BLOCKSIZE_REDUCED*1.0));
 
     // step 2a: reset grid
     kgrid_clearGrid <<< blocksPerGridCells, kgrid_BLOCKSIZE_1D
@@ -313,29 +379,19 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                                    t_gridUniqueIndex,
                                    t_partUniqueIndex);
 
-    int grid_unique_size = t_unique_end.first - t_gridUniqueIndex;
+    GPU_CHECKERROR(cudaDeviceSynchronize());
+    *grid_unique_size = t_unique_end.first - t_gridUniqueIndex;
 
     // std::cout << "unique size is: " << grid_unique_size << std::endl;
     // std::cout << "grid size is : " << grid_size << std::endl;
+    // step 2f: find k nearest neighbors
 
-    
-
-    // TODO
-
-    // step 7: update velocity
-    kgrid_updateVelocity <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
-                      >>> (*g_particles, num_particles, dt);
+    assert(sizeof(int) == sizeof(float));
+    size_t knn_shared_bytes = sizeof(int) * kgrid_MAX_CELL_SIZE * kgrid_BLOCKSIZE_REDUCED * 2;
+    kgrid_findKNearestNeighbors <<< blocksPerPartReduced, kgrid_BLOCKSIZE_REDUCED, knn_shared_bytes
+                                >>> (*g_particles, num_particles, *g_neighbors,
+                                     *g_gridIndex, *g_grid, grid_size, h);
     GPU_CHECKERROR(cudaGetLastError());
-
-
-    // step 9: update position
-    kgrid_updatePosition <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
-                      >>> (*g_particles, num_particles);
-    GPU_CHECKERROR(cudaGetLastError());
-
-
-
-    GPU_CHECKERROR(cudaDeviceSynchronize());
 }
 
 /// Apply Forces
@@ -395,13 +451,119 @@ __global__ void kgrid_setGridCells(int *g_gridIndex,
         }
         else if (gridCell != g_gridIndex[id - 1]) {
             if (gridCell < 0 || num_cells <= gridCell) {
-                printf("INVALID GRIDCELL: %d", gridCell);
+                printf("INVALID GRIDCELL: %d\n", gridCell);
                 return;
             }
             g_grid[gridCell] = id;
         }
     }
 }
+
+/// find k nearest neighbors (by particle)
+__global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
+                                            int num_particles,
+                                            int *g_neighbors,
+                                            int *g_gridIndex,
+                                            int *g_grid,
+                                            int num_cells,
+                                            scalar h) {
+    extern __shared__ int s_mem[]; // 32 bits for both float and int
+
+    const int array_size = kgrid_MAX_CELL_SIZE * 2;
+    const int thread_offset = array_size * threadIdx.x;
+    const int local_offset = kgrid_MAX_CELL_SIZE;
+
+    int* s_particles = &s_mem[thread_offset];
+    float* s_distances = (float*)&s_particles[local_offset];
+
+    // int s_particles[kgrid_MAX_CELL_SIZE];
+    // float s_distances[kgrid_MAX_CELL_SIZE];
+
+    int particle_id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (particle_id >= num_particles)
+        return;
+
+    Vector3s pos = g_particles[particle_id].pos;
+    int grid_index = g_gridIndex[particle_id];
+    int i, j, k;
+    kgrid_getGridLocationFromIndex(grid_index, i, j, k);
+
+    int num_candidates = 0;
+    for (int cur_i = i-1; cur_i <= i+1; cur_i++) {
+        for (int cur_j = j-1; cur_j <= j+1; cur_j++) {
+            for (int cur_k = k-1; cur_k <= k+1; cur_k++) {
+
+                if (cur_i < 0 || cur_i >= c_gridSizeX)
+                    continue;
+                if (cur_j < 0 || cur_j >= c_gridSizeY)
+                    continue;
+                if (cur_k < 0 || cur_k >= c_gridSizeZ)
+                    continue;
+                if (num_candidates >= kgrid_MAX_CELL_SIZE)
+                    goto nearest_postloop;
+
+                int cur_grid_index = kgrid_getGridIndex(cur_i, cur_j, cur_k);
+
+                int first_particle_id = g_grid[cur_grid_index];
+                if (first_particle_id == -1)
+                    continue;
+
+                int cur_particle_id = first_particle_id;
+                Vector3s cur_pos;
+                scalar dist;
+
+                while(cur_particle_id < num_particles &&
+                      cur_grid_index != g_gridIndex[cur_particle_id]) {
+                    // printf("while : %d - %d\n", particle_id, cur_particle_id);
+
+                    if (cur_particle_id < 0 || cur_particle_id >= num_particles) {
+                        printf("oh god oh god: %d - %d", particle_id, cur_particle_id);
+                    }
+
+                    cur_pos = g_particles[cur_particle_id].pos;
+
+
+                    dist = glm::length(cur_pos - pos);
+
+                    if (dist < h) {
+                        s_particles[num_candidates] = cur_particle_id;
+                        s_distances[num_candidates] = dist;
+
+                        num_candidates++;
+                    }
+                    cur_particle_id++;
+                }
+
+            }
+        }
+    }
+
+ nearest_postloop:
+    // printf("sorting!\n");
+
+    // now that the arrays are loaded, let's sort them
+    thrust::device_ptr<int> t_particles = thrust::device_pointer_cast(s_particles);
+    thrust::device_ptr<float> t_distances = thrust::device_pointer_cast(s_distances);
+
+    thrust::stable_sort_by_key(thrust::seq, t_distances, t_distances+num_candidates,
+                        t_particles);
+
+    int *g_my_neighbors = g_neighbors + (kgrid_NUM_NEIGHBORS * particle_id);
+
+    // take first k particles and put them in neighbors list
+    // put -1 if candidates don't exist
+    for (int n_i = 0; n_i < kgrid_NUM_NEIGHBORS; n_i++) {
+        if (n_i < num_candidates) {
+            g_my_neighbors[n_i] = s_particles[n_i];
+        }
+        else {
+            g_my_neighbors[n_i] = -1;
+        }
+    }
+}
+
+
+/// TODO
 
 
 /// update velocity
@@ -457,6 +619,12 @@ __device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k) {
 
 __device__ int kgrid_getGridIndex(int i, int j, int k) {
     return (c_gridSizeX * c_gridSizeY * k) + (c_gridSizeX * j) + i;
+}
+
+__device__ void kgrid_getGridLocationFromIndex(int id, int &i, int &j, int &k) {
+    i = id % c_gridSizeX;
+    j = (id / c_gridSizeX) % c_gridSizeY;
+    k = (id / c_gridSizeX / c_gridSizeY) % c_gridSizeZ;
 }
 
 __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k) {
