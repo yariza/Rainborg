@@ -242,6 +242,7 @@ void loadScene( const std::string& file_name) {
         FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
         scene->insertFluidBoundary(fbrick);
 
+    //#endif
 
         Stepper *stepper = new Stepper();
 
@@ -274,7 +275,9 @@ int main(int args, char **argv)
 {
     srand(time(NULL));
     #ifdef GPU_ENABLED
-    // initGPUFluid();
+    if(g_gpu_mode){
+        //initGPUFluid();
+    }
     #endif
 
     parseCommandLine(args, argv);

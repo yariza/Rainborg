@@ -610,7 +610,7 @@ void adjustVel(scalar dt){
 void stepSystemGPUFluid(scalar dt){
     if(!deviceHappy)
         return;
-
+    //return;
 
     updatePredFromForce(dt);    
 
@@ -649,7 +649,6 @@ void updateVBOGPUFluid(float *vboptr){
         deviceHappy = true;
     }
     // Is sad the first call, then fine
-    std::cout << vboptr << std::endl;
     GPU_CHECKERROR(cudaThreadSynchronize());
 
 }
