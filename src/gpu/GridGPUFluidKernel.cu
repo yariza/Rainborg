@@ -5,6 +5,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+#include <thrust/pair.h>
+#include <thrust/execution_policy.h>
 
 const int kgrid_BLOCKSIZE_1D = 512;
 const int kgrid_BLOCKSIZE_3D = 8;
@@ -61,7 +63,14 @@ __global__ void kgrid_clearGrid(int *g_grid, int grid_size);
 // get grid indices
 __global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
                                      int num_particles,
-                                     int *g_gridIndex);
+                                     int *g_gridIndex,
+                                     int *g_partUniqueIndex);
+
+// get grid cells
+__global__ void kgrid_setGridCells(int *g_gridIndex,
+                                   int num_particles,
+                                   int *g_grid,
+                                   int num_cells);
 
 // TODO
 
@@ -273,7 +282,7 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
 
     // step 2b: get gridIDs
     kgrid_getGridIndices <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
-                         >>> (*g_particles, num_particles, *g_gridIndex);
+                         >>> (*g_particles, num_particles, *g_gridIndex, *g_partUniqueIndex);
     GPU_CHECKERROR(cudaGetLastError());
 
     // step 2c: sort particles by gridID
@@ -284,7 +293,34 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
     thrust::sort_by_key(t_gridIndex, t_gridIndex+num_particles, t_particles);
     GPU_CHECKERROR(cudaGetLastError());
 
-    // step 2d: 
+    // step 2d: set grid cells
+    kgrid_setGridCells <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                       >>> (*g_gridIndex, num_particles, *g_grid, grid_size);
+    GPU_CHECKERROR(cudaGetLastError());
+
+    // step 2e: find unique grid cells / particles, find number unique cells
+    thrust::device_ptr<int> t_gridUniqueIndex =
+        thrust::device_pointer_cast(*g_gridUniqueIndex);
+    thrust::device_ptr<int> t_partUniqueIndex =
+        thrust::device_pointer_cast(*g_partUniqueIndex);
+
+    // copy over to grid unique index
+    thrust::pair<thrust::device_ptr<int>, thrust::device_ptr<int> > t_unique_end =
+        thrust::unique_by_key_copy(thrust::device,
+                                   t_gridIndex,
+                                   t_gridIndex + num_particles,
+                                   t_partUniqueIndex,
+                                   t_gridUniqueIndex,
+                                   t_partUniqueIndex);
+
+    int grid_unique_size = t_unique_end.first - t_gridUniqueIndex;
+
+    // std::cout << "unique size is: " << grid_unique_size << std::endl;
+    // std::cout << "grid size is : " << grid_size << std::endl;
+
+    
+
+    // TODO
 
     // step 7: update velocity
     kgrid_updateVelocity <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
@@ -328,11 +364,12 @@ __global__ void kgrid_clearGrid(int *g_grid, int grid_size) {
     }
 }
 
-/// Get Grid Indices
+/// Get Grid Indices (also setup unique particle index)
 
 __global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
                                      int num_particles,
-                                     int *g_gridIndex) {
+                                     int *g_gridIndex,
+                                     int *g_partUniqueIndex) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     if (id < num_particles) {
         Vector3s pos = g_particles[id].pos;
@@ -340,6 +377,29 @@ __global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
         kgrid_getGridLocation(pos, i, j, k);
         int index = kgrid_getGridIndex(i, j, k);
         g_gridIndex[id] = index;
+        g_partUniqueIndex[id] = id;
+    }
+}
+
+/// Set grid cells
+
+__global__ void kgrid_setGridCells(int *g_gridIndex,
+                                   int num_particles,
+                                   int *g_grid,
+                                   int num_cells) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id < num_particles) {
+        int gridCell = g_gridIndex[id];
+        if (id == 0) {
+            g_grid[gridCell] = id;
+        }
+        else if (gridCell != g_gridIndex[id - 1]) {
+            if (gridCell < 0 || num_cells <= gridCell) {
+                printf("INVALID GRIDCELL: %d", gridCell);
+                return;
+            }
+            g_grid[gridCell] = id;
+        }
     }
 }
 
