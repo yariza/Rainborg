@@ -1,5 +1,8 @@
 #include "GridGPUFluid.h"
 #include "gpu/GridGPUFluidKernel.h"
+#include "FluidSimpleGravityForce.h"
+#include "Scene.h"
+
 #include <iostream>
 GridGPUFluid::GridGPUFluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors) 
 : Fluid(mass, p0, h, iters, maxNeighbors, minNeighbors)
@@ -20,6 +23,28 @@ GridGPUFluid::~GridGPUFluid() {
 
 void GridGPUFluid::stepSystem(Scene& scene, scalar dt) {
 
+  Vector3s accumForce = Vector3s(0, 0, 0);
+
+  std::vector<FluidForce*> &forces = scene.getFluidForces();
+  for (std::vector<FluidForce*>::size_type i=0;
+       i < forces.size(); i++) {
+
+    FluidForce *force = forces[i];
+
+    // check if simple gravity force
+    FluidSimpleGravityForce *gravityForce = dynamic_cast<FluidSimpleGravityForce*>(force);
+
+    if (gravityForce) {
+      accumForce += gravityForce->getGlobalForce();
+    }
+  }
+
+  grid_stepFluid(&d_neighbors, &d_gridIndex,
+                 &d_grid,
+                 &d_particles,
+                 getNumParticles(),
+                 accumForce,
+                 dt);
 }
 
 void GridGPUFluid::loadFluidVolumes() {

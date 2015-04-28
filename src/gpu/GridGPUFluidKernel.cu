@@ -44,6 +44,8 @@ __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int n
 /// Implementation
 ////////////////////////////////////////////////
 
+/// Init fluid
+
 void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
                        int **g_grid,
                        grid_gpu_block_t **g_particles,
@@ -127,6 +129,30 @@ void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
     cudaFree(g_volumes); // we don't use this anymore
 }
 
+__global__ void kgrid_initializePositions(grid_gpu_block_t *g_particles, FluidVolume* g_volumes,
+                                     int num_particles, int num_volumes) {
+
+    int gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= num_particles)
+        return;
+
+    int volume_index = -1;
+    int offset = 0;
+    int volume_size = 0;
+    do {
+        volume_index++;
+        offset += volume_size;
+        volume_size = g_volumes[volume_index].m_numParticles;
+    } while (offset + volume_size < gid);
+
+    FluidVolume& volume = g_volumes[volume_index];
+
+    g_particles[gid].pos = kgrid_getFluidVolumePosition(volume, gid - offset);
+    g_particles[gid].vec1 = Vector3s(0, 0, 0); // velocity
+}
+
+/// Update VBO
+
 void grid_updateVBO(float *vboptr, grid_gpu_block_t *g_particles, int num_particles) {
 
     if (vboptr == NULL) {
@@ -150,30 +176,6 @@ void grid_updateVBO(float *vboptr, grid_gpu_block_t *g_particles, int num_partic
     GPU_CHECKERROR(cudaThreadSynchronize());
 }
 
-__global__ void kgrid_initializePositions(grid_gpu_block_t *g_particles, FluidVolume* g_volumes,
-                                     int num_particles, int num_volumes) {
-
-    int gid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (gid >= num_particles)
-        return;
-
-    int volume_index = -1;
-    int offset = 0;
-    int volume_size = 0;
-    do {
-        volume_index++;
-        offset += volume_size;
-        volume_size = g_volumes[volume_index].m_numParticles;
-    } while (offset + volume_size < gid);
-
-    FluidVolume& volume = g_volumes[volume_index];
-
-    g_particles[gid].pos = kgrid_getFluidVolumePosition(volume, gid - offset);
-    g_particles[gid].vec1 = Vector3s(0, 0, 0); // velocity
-}
-
-
-
 __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int num_particles) {
 
     int gid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -188,6 +190,28 @@ __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int n
         vbo[gid*4+3] = 1.0f;
     }
 }
+
+/// Step function
+
+void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
+                    int **g_grid,
+                    grid_gpu_block_t **g_particles,
+                    int num_particles,
+                    Vector3s accumForce,
+                    scalar dt) {
+
+    
+}
+
+/// Setup Grid
+
+
+
+
+
+////////////////////////////////////////
+/// Device functions
+////////////////////////////////////////
 
 __device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k) {
 

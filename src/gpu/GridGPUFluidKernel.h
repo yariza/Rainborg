@@ -13,7 +13,6 @@ typedef struct {
   scalar sca1;
   scalar sca2;
   scalar sca3;
-  int id;
 } grid_gpu_block_t;
 
 extern "C" {
@@ -23,6 +22,13 @@ extern "C" {
                          FluidVolume* h_volumes, int num_volumes,
                          FluidBoundingBox* h_boundingbox,
                          scalar h);
+
+  void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
+                      int **g_grid,
+                      grid_gpu_block_t **g_particles,
+                      int num_particles,
+                      Vector3s accumForce,
+                      scalar dt);
 
   void grid_updateVBO(float *vboptr, grid_gpu_block_t *g_particles, int num_particles);
 }
