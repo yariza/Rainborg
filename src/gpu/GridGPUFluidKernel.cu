@@ -87,6 +87,7 @@ __global__ void kgrid_clearGrid(int *grid, int grid_size);
 
 void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
                        int **g_grid,
+                       int **g_gridUniqueIndex, int **g_partUniqueIndex,
                        grid_gpu_block_t **g_particles,
                        FluidVolume* h_volumes, int num_volumes,
                        FluidBoundingBox* h_boundingBox,
@@ -118,6 +119,15 @@ void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
     // allocate grid index array (num_particles * int)
     GPU_CHECKERROR(cudaMalloc((void **)g_gridIndex,
                               sizeof(int)*num_particles));
+
+    // allocate grid unique index array (initially num_particles * int)
+    GPU_CHECKERROR(cudaMalloc((void **)g_gridUniqueIndex,
+                              sizeof(int)*num_particles));
+
+    // allocate part unique index array (initially num_particles * int)
+    GPU_CHECKERROR(cudaMalloc((void **)g_partUniqueIndex,
+                              sizeof(int)*num_particles));
+
 
     int gridSize = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
     kgrid_initializePositions <<< gridSize, kgrid_BLOCKSIZE_1D
@@ -233,6 +243,7 @@ __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int n
 
 void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                     int **g_grid,
+                    int **g_gridUniqueIndex, int **g_partUniqueIndex,
                     grid_gpu_block_t **g_particles,
                     int num_particles,
                     FluidBoundingBox* h_boundingBox,

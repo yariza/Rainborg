@@ -41,6 +41,7 @@ void GridGPUFluid::stepSystem(Scene& scene, scalar dt) {
 
   grid_stepFluid(&d_neighbors, &d_gridIndex,
                  &d_grid,
+                 &d_gridUniqueIndex, &d_partUniqueIndex,
                  &d_particles,
                  getNumParticles(),
                  m_boundingBox, m_h,
@@ -57,6 +58,7 @@ void GridGPUFluid::loadFluidVolumes() {
 
   grid_initGPUFluid(&d_neighbors, &d_gridIndex,
                     &d_grid,
+                    &d_gridUniqueIndex, &d_partUniqueIndex,
                     &d_particles,
                     h_volumes, m_volumes.size(),
                     m_boundingBox, m_h);

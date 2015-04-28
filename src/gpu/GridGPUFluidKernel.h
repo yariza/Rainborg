@@ -18,6 +18,7 @@ typedef struct {
 extern "C" {
   void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
                          int **g_grid,
+                         int **g_gridUniqueIndex, int **g_partUniqueIndex,
                          grid_gpu_block_t **g_particles,
                          FluidVolume* h_volumes, int num_volumes,
                          FluidBoundingBox* h_boundingbox,
@@ -25,6 +26,7 @@ extern "C" {
 
   void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                       int **g_grid,
+                      int **g_gridUniqueIndex, int **g_partUniqueIndex,
                       grid_gpu_block_t **g_particles,
                       int num_particles,
                       FluidBoundingBox* h_boundingbox,
