@@ -27,7 +27,7 @@ void FluidVolume::setParticlePositions(Vector3s* pos, int offset) {
     if (m_mode == kFLUID_VOLUME_MODE_BOX) {
 
         if (m_random) {
-
+            std::cout << "random" << std::endl;
             scalar x;
             scalar y;
             scalar z;
@@ -42,6 +42,7 @@ void FluidVolume::setParticlePositions(Vector3s* pos, int offset) {
             }
         }
         else {
+            std::cout << "not random" << std::endl;
             int i=0;
             for (scalar x = m_minX; x < m_maxX; x += m_dens_cbrt) {
                 for (scalar y = m_minY; y < m_maxY; y += m_dens_cbrt) {

@@ -32,6 +32,8 @@ using namespace openglframework;
 
 #ifdef GPU_ENABLED
 
+#define NAIVE 1
+
 #define GPU_CHECKERROR(err) (gpuCheckError(err, __FILE__, __LINE__))
 static void gpuCheckError(cudaError_t err, const char *file, int line){
     if(err != cudaSuccess){
@@ -156,6 +158,7 @@ void loadScene( const std::string& file_name) {
     //PLACEHOLDER
         Scene *scene = new Scene();
 
+    #if NAIVE == 0
         FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(0, -10.0, 0);
         scene->insertFluidForce(sgf);
 
@@ -188,6 +191,8 @@ void loadScene( const std::string& file_name) {
         FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
         scene->insertFluidBoundary(fbrick);
 
+    #endif
+
         Stepper *stepper = new Stepper();
 
         // stepper.stepScene(scene, .01);
@@ -216,23 +221,27 @@ void loadScene( const std::string& file_name) {
 int main(int args, char **argv)
 {
     srand(time(NULL));
-    #ifdef GPU_ENABLED
-    initGPUFluid();
-    #endif
-
     parseCommandLine(args, argv);
 
-    // Wow this is going to be my terrible, terrible 'test' function thing
-    // testBasicSetup();
+    #ifdef GPU_ENABLED
+    if(g_gpu_mode){
+        #if NAIVE > 0
+        std::cout << "yo init" << std::endl;
+        initGPUFluid();
+        #endif
+    }
+    #endif
 
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
 
     #ifdef GPU_ENABLED
-    GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
+    if(g_gpu_mode){
+        GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
+        std::cout << "set device" << std::endl;
+    }
     #endif
  
-
     loadScene(g_xml_scene_file);
 
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
