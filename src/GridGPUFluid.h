@@ -37,6 +37,15 @@ private:
     // stores grid index of particle
     int *d_gridIndex;
 
+    // copy of grid index
+    // later used to extract unique copies
+    // initial size num_particles (resized to grid_size)
+    int *d_gridUniqueIndex;
+
+    // stores the first particle id for each unique grid index
+    // initial size num_particles (resized to grid_size)
+    int *d_particleIndex;
+
     // grid: stores the gridIndex id of first element in grid location
     // dimension x*y*z
     int *d_grid;

@@ -27,6 +27,8 @@ extern "C" {
                       int **g_grid,
                       grid_gpu_block_t **g_particles,
                       int num_particles,
+                      FluidBoundingBox* h_boundingbox,
+                      scalar h,
                       Vector3s accumForce,
                       scalar dt);
 

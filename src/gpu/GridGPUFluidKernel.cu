@@ -1,6 +1,10 @@
 #ifdef GPU_ENABLED
 #include "GridGPUFluidKernel.h"
 #include "GPUHelper.h"
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
+#include <thrust/unique.h>
 
 const int kgrid_BLOCKSIZE_1D = 512;
 const int kgrid_BLOCKSIZE_3D = 8;
@@ -34,11 +38,46 @@ __constant__ int c_gridSizeZ;
 __device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k);
 __device__ int kgrid_getGridIndex(int i, int j, int k);
 
+// helper function for getting grid size
+__host__ void hgrid_getGridSize(FluidBoundingBox* fbox, scalar h,
+                               int &gridSizeX, int &gridSizeY, int &gridSizeZ);
+
 __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k);
 
 __global__ void kgrid_initializePositions(grid_gpu_block_t *g_particles, FluidVolume* g_volumes,
                                      int num_particles, int num_volumes);
 __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int num_particles);
+
+
+// apply forces
+__global__ void kgrid_applyForces(grid_gpu_block_t *g_particles,
+                                  int num_particles,
+                                  Vector3s accumForce,
+                                  scalar dt);
+
+// clear grid
+__global__ void kgrid_clearGrid(int *g_grid, int grid_size);
+
+// get grid indices
+__global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
+                                     int num_particles,
+                                     int *g_gridIndex);
+
+// TODO
+
+
+// update velocity
+__global__ void kgrid_updateVelocity(grid_gpu_block_t *g_particles,
+                                     int num_particles,
+                                     scalar dt);
+
+// update position
+__global__ void kgrid_updatePosition(grid_gpu_block_t *g_particles,
+                                     int num_particles);
+
+// Nearest Neighbor kernels
+__global__ void kgrid_clearGrid(int *grid, int grid_size);
+
 
 ////////////////////////////////////////////////
 /// Implementation
@@ -107,9 +146,8 @@ void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
                                       sizeof(scalar)));
 
     // figure out dimensions of grid
-    int gridSizeX = ceil(h_boundingBox->width() / h);
-    int gridSizeY = ceil(h_boundingBox->height() / h);
-    int gridSizeZ = ceil(h_boundingBox->depth() / h);
+    int gridSizeX, gridSizeY, gridSizeZ;
+    hgrid_getGridSize(h_boundingBox, h, gridSizeX, gridSizeY, gridSizeZ);
 
     GPU_CHECKERROR(cudaMemcpyToSymbol(c_gridSizeX, &gridSizeX,
                                       sizeof(scalar)));
@@ -173,7 +211,7 @@ void grid_updateVBO(float *vboptr, grid_gpu_block_t *g_particles, int num_partic
         grid_deviceHappy = true;
     }
 
-    GPU_CHECKERROR(cudaThreadSynchronize());
+    GPU_CHECKERROR(cudaDeviceSynchronize());
 }
 
 __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int num_particles) {
@@ -197,21 +235,143 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                     int **g_grid,
                     grid_gpu_block_t **g_particles,
                     int num_particles,
+                    FluidBoundingBox* h_boundingBox,
+                    scalar h,
                     Vector3s accumForce,
                     scalar dt) {
 
-    
+    int gridSizeX, gridSizeY, gridSizeZ;
+    hgrid_getGridSize(h_boundingBox, h, gridSizeX, gridSizeY, gridSizeZ);
+    int grid_size = gridSizeX*gridSizeY*gridSizeZ;
+
+    int blocksPerParticles = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
+    int blocksPerGridCells = ceil(grid_size / (kgrid_BLOCKSIZE_1D*1.0));
+
+    // step 1: apply forces, predict position
+    kgrid_applyForces <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                      >>> (*g_particles, num_particles, accumForce, dt);
+    GPU_CHECKERROR(cudaGetLastError());
+
+
+    // step 2: find k nearest neighbors
+
+    // step 2a: reset grid
+    kgrid_clearGrid <<< blocksPerGridCells, kgrid_BLOCKSIZE_1D
+                    >>> (*g_grid, grid_size);
+    GPU_CHECKERROR(cudaGetLastError());
+
+    // step 2b: get gridIDs
+    kgrid_getGridIndices <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                         >>> (*g_particles, num_particles, *g_gridIndex);
+    GPU_CHECKERROR(cudaGetLastError());
+
+    // step 2c: sort particles by gridID
+    thrust::device_ptr<int> t_gridIndex = thrust::device_pointer_cast(*g_gridIndex);
+    thrust::device_ptr<grid_gpu_block_t> t_particles =
+        thrust::device_pointer_cast(*g_particles);
+
+    thrust::sort_by_key(t_gridIndex, t_gridIndex+num_particles, t_particles);
+    GPU_CHECKERROR(cudaGetLastError());
+
+    // step 2d: 
+
+    // step 7: update velocity
+    kgrid_updateVelocity <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                      >>> (*g_particles, num_particles, dt);
+    GPU_CHECKERROR(cudaGetLastError());
+
+
+    // step 9: update position
+    kgrid_updatePosition <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                      >>> (*g_particles, num_particles);
+    GPU_CHECKERROR(cudaGetLastError());
+
+
+
+    GPU_CHECKERROR(cudaDeviceSynchronize());
 }
 
-/// Setup Grid
+/// Apply Forces
+
+__global__ void kgrid_applyForces(grid_gpu_block_t *g_particles,
+                                  int num_particles,
+                                  Vector3s accumForce,
+                                  scalar dt) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id < num_particles) {
+        Vector3s pos = g_particles[id].pos;
+        Vector3s vel = g_particles[id].vec1;
+        vel += dt * accumForce;
+        Vector3s ppos = pos + dt * vel;
+        g_particles[id].vec1 = vel; //velocity
+        g_particles[id].vec2 = ppos; // predicted pos
+    }
+}
+
+/// Reset Grid
+
+__global__ void kgrid_clearGrid(int *g_grid, int grid_size) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id < grid_size) {
+        g_grid[id] = -1; // indicates no particle
+    }
+}
+
+/// Get Grid Indices
+
+__global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
+                                     int num_particles,
+                                     int *g_gridIndex) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id < num_particles) {
+        Vector3s pos = g_particles[id].pos;
+        int i, j, k;
+        kgrid_getGridLocation(pos, i, j, k);
+        int index = kgrid_getGridIndex(i, j, k);
+        g_gridIndex[id] = index;
+    }
+}
 
 
+/// update velocity
+
+__global__ void kgrid_updateVelocity(grid_gpu_block_t *g_particles,
+                                     int num_particles,
+                                     scalar dt) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id < num_particles) {
+        Vector3s pos = g_particles[id].pos; // pos
+        Vector3s ppos = g_particles[id].vec2; // ppos
+        Vector3s vel = (ppos - pos) / dt;
+        g_particles[id].vec1 = vel; //velocity
+    }
+}
+
+
+/// update position
+
+__global__ void kgrid_updatePosition(grid_gpu_block_t *g_particles,
+                                     int num_particles) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id < num_particles) {
+        Vector3s ppos = g_particles[id].vec2; // ppos
+        g_particles[id].pos = ppos; //pos = ppos
+    }
+
+}
 
 
 
 ////////////////////////////////////////
-/// Device functions
+/// Helper functions
 ////////////////////////////////////////
+
+__host__ void hgrid_getGridSize(FluidBoundingBox* fbox, scalar h,
+                               int &gridSizeX, int &gridSizeY, int &gridSizeZ) {
+    gridSizeX = ceil(fbox->width() / h);
+    gridSizeY = ceil(fbox->height() / h);
+    gridSizeZ = ceil(fbox->depth() / h);
+}
 
 __device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k) {
 
