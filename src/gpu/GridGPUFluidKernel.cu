@@ -92,6 +92,14 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
                                             int num_cells,
                                             scalar h);
 
+// calculate pressure
+__global__ void kgrid_calculatePressure(grid_gpu_block_t *g_particles,
+                                        int num_particles,
+                                        int *g_neighbors,
+                                        int *g_gridIndex,
+                                        int *g_grid,
+                                        int num_cells,
+                                        scalar h);
 // TODO
 
 
@@ -287,6 +295,7 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
 
     int blocksPerParticles = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
     int blocksPerGridCells = ceil(grid_size / (kgrid_BLOCKSIZE_1D*1.0));
+    int blocksPerPartReduced = ceil(num_particles / (kgrid_BLOCKSIZE_REDUCED*1.0));
 
     // step 1: apply forces, predict position
     kgrid_applyForces <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
@@ -305,11 +314,15 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                                 grid_size,
                                 &grid_unique_size);
 
-    GPU_CHECKERROR(cudaDeviceSynchronize());
+    // step 3a: calculate pressure
 
+    
 
+    // step 3b: calculate lambda
+    
 
     // TODO
+    GPU_CHECKERROR(cudaDeviceSynchronize());
 
     // step 7: update velocity
     kgrid_updateVelocity <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
@@ -545,7 +558,7 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
     thrust::device_ptr<int> t_particles = thrust::device_pointer_cast(s_particles);
     thrust::device_ptr<float> t_distances = thrust::device_pointer_cast(s_distances);
 
-    thrust::stable_sort_by_key(thrust::seq, t_distances, t_distances+num_candidates,
+    thrust::stable_sort_by_key(thrust::device, t_distances, t_distances+num_candidates,
                         t_particles);
 
     int *g_my_neighbors = g_neighbors + (kgrid_NUM_NEIGHBORS * particle_id);
@@ -560,6 +573,21 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
             g_my_neighbors[n_i] = -1;
         }
     }
+}
+
+/// calculate pressure - by grid cell
+__global__ void kgrid_calculatePressure(grid_gpu_block_t *g_particles,
+                                        int num_particles,
+                                        int *g_neighbors,
+                                        int *g_gridIndex,
+                                        int *g_grid,
+                                        int num_cells,
+                                        scalar h) {
+    int cell_id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (cell_id >= num_cells)
+        return;
+
+    
 }
 
 
