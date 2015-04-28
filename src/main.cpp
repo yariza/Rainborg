@@ -94,7 +94,7 @@ void testBasicSetup(){
     scene.insertFluidForce(sgf);
     //scene.insertFluidForce(sgff);
 
-    FluidBoundingBox fbox(-0, 10, -0, 10, -0, 10);
+    FluidBoundingBox* fbox = new FluidBoundingBox(-0, 10, -0, 10, -0, 10);
 
     // Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3);
     Fluid *fluid = new GridGPUFluid(2.0, 10000, .5, 3, 100, 3);
@@ -200,9 +200,13 @@ void loadScene( const std::string& file_name) {
         FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(0, -10.0, 0);
         scene->insertFluidForce(sgf);
 
-        FluidBoundingBox fbox(-5, 10, -5, 10, -5, 10);
+        FluidBoundingBox* fbox = new FluidBoundingBox(-5, 10, -5, 10, -5, 10);
 
-        Fluid *fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
+        Fluid *fluid;
+        if (g_gpu_mode)
+            fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
+        else
+            fluid = new SerialFluid(50000.0, 190000.0, 1., 3, 100, 3);
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);

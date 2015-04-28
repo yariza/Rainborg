@@ -4,7 +4,7 @@
 #include "SerialFluid.h"
 #include "OpenGLRenderer.h"
 
-class FluidRenderer : OpenGLRenderer
+class FluidRenderer : public OpenGLRenderer
 {
 public:
     FluidRenderer(Fluid* fluid);

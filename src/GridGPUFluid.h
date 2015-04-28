@@ -23,16 +23,25 @@ public:
 private:
     scalar m_eps;
 
-    // device global memory: per particle
+    // device global memory
+
+    // position: per particle
     Vector3s *d_pos;
+    // velocity: per particle
     Vector3s *d_vel;
-    // grid neighbors: per grid
-    // stores neighbor particle id.
-    // dimension x*y*z*max_neighbors
+
+    // grid neighbors
+    // stores neighbor particle ids.
+    // dimension num_particles*max_neighbors
     int *d_neighbors;
+
     // grid index: per particle
     // stores grid index of particle
     int *d_gridIndex;
+
+    // grid: stores the gridIndex id of first element in grid location
+    // dimension x*y*z
+    int *d_grid;
 
 };
 #endif

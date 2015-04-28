@@ -23,7 +23,7 @@ public:
     virtual void setRestDensity(scalar p0);
     virtual void setKernelH(scalar h);
     virtual void setNumIterations(int iter);
-    virtual void setBoundingBox(FluidBoundingBox& newBound);
+    virtual void setBoundingBox(FluidBoundingBox* newBound);
 
     virtual void insertFluidVolume(FluidVolume& volume);
 
@@ -34,7 +34,7 @@ public:
     virtual scalar getFPMass() const;
     virtual scalar getRestDensity() const;
     virtual scalar getKernelH() const;
-    virtual const FluidBoundingBox& getBoundingBox() const;
+    virtual const FluidBoundingBox* getBoundingBox() const;
     virtual const std::vector<FluidVolume>& getFluidVolumes() const;
 
     virtual void updateVBO(float* dptr) = 0;
@@ -49,7 +49,7 @@ protected:
     int m_minNeighbors;
 
     std::vector<FluidVolume> m_volumes;
-    FluidBoundingBox m_boundingBox; 
+    FluidBoundingBox* m_boundingBox; 
 
 };
 

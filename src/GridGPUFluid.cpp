@@ -31,7 +31,8 @@ void GridGPUFluid::loadFluidVolumes() {
 
   grid_initGPUFluid(&d_pos, &d_vel,
                     &d_neighbors, &d_gridIndex,
-                    h_volumes, m_volumes.size());
+                    h_volumes, m_volumes.size(),
+                    m_boundingBox);
 
 
 }

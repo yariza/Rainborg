@@ -87,9 +87,9 @@ SerialFluid::SerialFluid(const SerialFluid& otherFluid)
     // memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * sizeof(Vector3s)); 
     // memcpy(m_colors, otherFluid.getColors(), m_numParticles * sizeof(Vector4s)); 
 
-    m_gridX = ceil(m_boundingBox.width()/m_h);
-    m_gridY = ceil(m_boundingBox.height()/m_h);
-    m_gridZ = ceil(m_boundingBox.depth()/m_h);
+    m_gridX = ceil(m_boundingBox->width()/m_h);
+    m_gridY = ceil(m_boundingBox->height()/m_h);
+    m_gridZ = ceil(m_boundingBox->depth()/m_h);
 
     m_grid = (int *)malloc(m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int)); 
     m_gridCount = (int *)malloc(m_gridX * m_gridY * m_gridZ * sizeof(int)); 
@@ -137,7 +137,7 @@ void SerialFluid::setFPVel(int fp, const Vector3s& vel){
     //    m_vel[fp*3+2] = vel[2];
 }
 
-void SerialFluid::setBoundingBox(FluidBoundingBox& bound){
+void SerialFluid::setBoundingBox(FluidBoundingBox* bound){
     Fluid::setBoundingBox(bound);
 
     if(m_grid != NULL)
@@ -145,9 +145,9 @@ void SerialFluid::setBoundingBox(FluidBoundingBox& bound){
     if(m_gridCount != NULL)
         free(m_gridCount);
 
-    m_gridX = ceil(m_boundingBox.width()/m_h);
-    m_gridY = ceil(m_boundingBox.height()/m_h);
-    m_gridZ = ceil(m_boundingBox.depth()/m_h);
+    m_gridX = ceil(m_boundingBox->width()/m_h);
+    m_gridY = ceil(m_boundingBox->height()/m_h);
+    m_gridZ = ceil(m_boundingBox->depth()/m_h);
     m_grid = (int *)malloc(m_gridX * m_gridY * m_gridZ * m_maxNeighbors * sizeof(int)); 
     m_gridCount = (int *)malloc(m_gridX * m_gridY * m_gridZ * sizeof(int)); 
 
@@ -424,9 +424,9 @@ void SerialFluid::getGridIdx(Vector3s &pos, int &idx, int &idy, int &idz){
     // in our case...
     //printVec3(pos);
 
-    idx = (pos[0] - m_boundingBox.minX())/m_h; 
-    idy = (pos[1] - m_boundingBox.minY())/m_h;
-    idz = (pos[2] - m_boundingBox.minZ())/m_h; 
+    idx = (pos[0] - m_boundingBox->minX())/m_h; 
+    idy = (pos[1] - m_boundingBox->minY())/m_h;
+    idz = (pos[2] - m_boundingBox->minZ())/m_h; 
 
     assert(idx >= 0);
     assert(idy >= 0);
@@ -472,7 +472,7 @@ void SerialFluid::buildGrid(){
 }
 
 void SerialFluid::preserveOwnBoundary(){
-    m_boundingBox.dealWithCollisions(m_ppos, m_dpos, getNumParticles());
+    m_boundingBox->dealWithCollisions(m_ppos, m_dpos, getNumParticles());
 }
 
 void SerialFluid::dealWithCollisions(Scene& scene){

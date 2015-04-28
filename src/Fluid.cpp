@@ -84,10 +84,10 @@ void Fluid::insertFluidVolume(FluidVolume& volume) {
     m_volumes.push_back(volume);
 }
 
-void Fluid::setBoundingBox(FluidBoundingBox& bound){
+void Fluid::setBoundingBox(FluidBoundingBox* bound){
     m_boundingBox = bound;
 }
 
-const FluidBoundingBox& Fluid::getBoundingBox() const{
+const FluidBoundingBox* Fluid::getBoundingBox() const{
     return m_boundingBox;
 }

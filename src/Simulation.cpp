@@ -37,5 +37,6 @@ void Simulation::stepSystem(const scalar& dt) {
 
 void Simulation::display(openglframework::GLFWViewer *viewer, int width, int height)
 {
-    m_renderer->render(viewer, width, height);
+    if (m_renderer)
+        m_renderer->render(viewer, width, height);
 }

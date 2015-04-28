@@ -704,7 +704,7 @@ void SceneXMLParser::loadFluidBoundingBox(rapidxml::xml_node<>* node, Fluid& flu
 
         FluidBoundingBox* boundingbox = new FluidBoundingBox(xmin, xmax, ymin, ymax, zmin, zmax);
 
-        fluid.setBoundingBox(*boundingbox);
+        fluid.setBoundingBox(boundingbox);
     }
     else {
         std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred

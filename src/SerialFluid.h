@@ -23,7 +23,7 @@ public:
     virtual void stepSystem(Scene& scene, scalar dt);
     // void setFPPos(int fp, const Vector3s& pos);
     virtual void setFPVel(int fp, const Vector3s& vel);
-    virtual void setBoundingBox(FluidBoundingBox& newBound);
+    virtual void setBoundingBox(FluidBoundingBox* newBound);
     virtual void setColor(int i, const Vector4s& col); 
 
     virtual void loadFluidVolumes();

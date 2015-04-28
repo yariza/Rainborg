@@ -1,10 +1,10 @@
 #ifdef GPU_ENABLED
 #include "GridGPUFluidKernel.h"
-#include "../FluidVolume.h"
 #include "GPUHelper.h"
 
 const int kgrid_BLOCKSIZE_1D = 512;
 const int kgrid_BLOCKSIZE_3D = 8;
+const int kgrid_NUM_NEIGHBORS = 5;
 
 bool grid_deviceHappy = true;
 
@@ -14,9 +14,14 @@ __global__ void kgrid_initializePositions(Vector3s *g_pos, FluidVolume* g_volume
                                      int num_particles, int num_volumes);
 __global__ void kgrid_updateVBO(float* dptrvert, Vector3s *g_pos, int num_particles);
 
+////////////////////////////////////////////////
+/// Implementation
+////////////////////////////////////////////////
+
 void grid_initGPUFluid(Vector3s **g_pos, Vector3s **g_vel,
                        int **g_neighbors, int **g_gridIndex,
-                       FluidVolume* h_volumes, int num_volumes) {
+                       FluidVolume* h_volumes, int num_volumes,
+                       FluidBoundingBox* h_boundingBox) {
 
     int num_particles = 0;
     for (int i=0; i<num_volumes; i++) {
@@ -43,11 +48,22 @@ void grid_initGPUFluid(Vector3s **g_pos, Vector3s **g_vel,
                               sizeof(Vector3s)*num_particles));
     GPU_CHECKERROR(cudaMemset((void *)*g_pos, 0, sizeof(Vector3s)*num_particles));
 
+    // allocate neighbors array (num_particles * num_neighbors * int)
+    GPU_CHECKERROR(cudaMalloc((void **)g_neighbors,
+                              sizeof(int)*num_particles*kgrid_NUM_NEIGHBORS));
+
+    // allocate grid index array (num_particles * int)
+    GPU_CHECKERROR(cudaMalloc((void **)g_gridIndex,
+                              sizeof(int)*num_particles));
+
     int gridSize = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
     kgrid_initializePositions <<< gridSize, kgrid_BLOCKSIZE_1D
                               >>> (*g_pos, g_volumes, num_particles, num_volumes);
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
+
+    // GPU_CHECKERROR(cudaMemcpyToSymbol(c_boundingBox, h_boundingBox,
+                                      // sizeof(FluidBoundingBox)));
 
     cudaFree(g_volumes); // we don't use this anymore
 }

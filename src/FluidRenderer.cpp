@@ -82,10 +82,6 @@ FluidRenderer::~FluidRenderer() {
 
 void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
-  if (g_gpu_mode) {
-    
-  }
-
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -127,7 +123,11 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
         #endif
     }
     else {
-        SerialFluid* serialFluid = static_cast<SerialFluid*>(m_fluid);
+        SerialFluid* serialFluid = dynamic_cast<SerialFluid*>(m_fluid);
+        if (!serialFluid) {
+          std::cerr << "FluidRenderer: Fluid type is not Serial!" << std::endl;
+          exit(1);
+        }
 
         Vector3s* posArray = serialFluid->getFPPos();
 
