@@ -25,10 +25,8 @@ private:
 
     // device global memory
 
-    // position: per particle
-    Vector3s *d_pos;
-    // velocity: per particle
-    Vector3s *d_vel;
+    // particle array
+    grid_gpu_block_t *d_particles;
 
     // grid neighbors
     // stores neighbor particle ids.

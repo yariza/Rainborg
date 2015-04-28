@@ -29,14 +29,15 @@ void GridGPUFluid::loadFluidVolumes() {
     h_volumes[i] = m_volumes[i];
   }
 
-  grid_initGPUFluid(&d_pos, &d_vel,
-                    &d_neighbors, &d_gridIndex,
+  grid_initGPUFluid(&d_neighbors, &d_gridIndex,
+                    &d_grid,
+                    &d_particles,
                     h_volumes, m_volumes.size(),
-                    m_boundingBox);
+                    m_boundingBox, m_h);
 
 
 }
 
 void GridGPUFluid::updateVBO(float* dptrvert) {
-  grid_updateVBO(dptrvert, d_pos, getNumParticles());
+  grid_updateVBO(dptrvert, d_particles, getNumParticles());
 }

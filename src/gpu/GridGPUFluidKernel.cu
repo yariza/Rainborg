@@ -5,23 +5,51 @@
 const int kgrid_BLOCKSIZE_1D = 512;
 const int kgrid_BLOCKSIZE_3D = 8;
 const int kgrid_NUM_NEIGHBORS = 5;
+const int kgrid_MAX_CELL_SIZE = 50;
 
 bool grid_deviceHappy = true;
 
+// fluid characteristics
+__constant__ scalar c_h;
+
+// grid bounds
+__constant__ scalar c_minX;
+__constant__ scalar c_maxX;
+__constant__ scalar c_minY;
+__constant__ scalar c_maxY;
+__constant__ scalar c_minZ;
+__constant__ scalar c_maxZ;
+__constant__ scalar c_eps;
+
+// grid size
+__constant__ int c_gridSizeX;
+__constant__ int c_gridSizeY;
+__constant__ int c_gridSizeZ;
+
+///////////////////////////////////////////////
+/// Function Headers
+///////////////////////////////////////////////
+
+// helper functions for getting grid indices
+__device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k);
+__device__ int kgrid_getGridIndex(int i, int j, int k);
+
 __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k);
 
-__global__ void kgrid_initializePositions(Vector3s *g_pos, FluidVolume* g_volumes,
+__global__ void kgrid_initializePositions(grid_gpu_block_t *g_particles, FluidVolume* g_volumes,
                                      int num_particles, int num_volumes);
-__global__ void kgrid_updateVBO(float* dptrvert, Vector3s *g_pos, int num_particles);
+__global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int num_particles);
 
 ////////////////////////////////////////////////
 /// Implementation
 ////////////////////////////////////////////////
 
-void grid_initGPUFluid(Vector3s **g_pos, Vector3s **g_vel,
-                       int **g_neighbors, int **g_gridIndex,
+void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
+                       int **g_grid,
+                       grid_gpu_block_t **g_particles,
                        FluidVolume* h_volumes, int num_volumes,
-                       FluidBoundingBox* h_boundingBox) {
+                       FluidBoundingBox* h_boundingBox,
+                       scalar h) {
 
     int num_particles = 0;
     for (int i=0; i<num_volumes; i++) {
@@ -38,15 +66,9 @@ void grid_initGPUFluid(Vector3s **g_pos, Vector3s **g_vel,
                               sizeof(FluidVolume)*num_volumes,
                               cudaMemcpyHostToDevice));
 
-    // allocate position and velocity array
-    GPU_CHECKERROR(cudaMalloc((void **)g_pos,
-                              sizeof(Vector3s)*num_particles));
-    GPU_CHECKERROR(cudaMalloc((void **)g_vel,
-                              sizeof(Vector3s)*num_particles));
-    // set velocities to 0
-    GPU_CHECKERROR(cudaMemset((void *)*g_vel, 0,
-                              sizeof(Vector3s)*num_particles));
-    GPU_CHECKERROR(cudaMemset((void *)*g_pos, 0, sizeof(Vector3s)*num_particles));
+    // allocate particles
+    GPU_CHECKERROR(cudaMalloc((void **)g_particles,
+                              sizeof(grid_gpu_block_t)*num_particles));
 
     // allocate neighbors array (num_particles * num_neighbors * int)
     GPU_CHECKERROR(cudaMalloc((void **)g_neighbors,
@@ -58,24 +80,61 @@ void grid_initGPUFluid(Vector3s **g_pos, Vector3s **g_vel,
 
     int gridSize = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
     kgrid_initializePositions <<< gridSize, kgrid_BLOCKSIZE_1D
-                              >>> (*g_pos, g_volumes, num_particles, num_volumes);
+                              >>> (*g_particles, g_volumes, num_particles, num_volumes);
     GPU_CHECKERROR(cudaGetLastError());
-    GPU_CHECKERROR(cudaThreadSynchronize());
 
-    // GPU_CHECKERROR(cudaMemcpyToSymbol(c_boundingBox, h_boundingBox,
-                                      // sizeof(FluidBoundingBox)));
+    //setup bounding box constants
+    scalar h_minX = h_boundingBox->minX();
+    scalar h_maxX = h_boundingBox->maxX();
+    scalar h_minY = h_boundingBox->minY();
+    scalar h_maxY = h_boundingBox->maxY();
+    scalar h_minZ = h_boundingBox->minZ();
+    scalar h_maxZ = h_boundingBox->maxZ();
+
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_minX, &h_minX,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_maxX, &h_maxX,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_minY, &h_minY,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_maxY, &h_maxY,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_minZ, &h_minZ,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_maxZ, &h_maxZ,
+                                      sizeof(scalar)));
+
+    // figure out dimensions of grid
+    int gridSizeX = ceil(h_boundingBox->width() / h);
+    int gridSizeY = ceil(h_boundingBox->height() / h);
+    int gridSizeZ = ceil(h_boundingBox->depth() / h);
+
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_gridSizeX, &gridSizeX,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_gridSizeY, &gridSizeY,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_gridSizeZ, &gridSizeZ,
+                                      sizeof(scalar)));
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_h, &h,
+                                      sizeof(scalar)));
+
+    // allocate grid
+    GPU_CHECKERROR(cudaMalloc((void **)g_grid,
+                              sizeof(int)*gridSizeX*gridSizeY*gridSizeZ));
+
+    GPU_CHECKERROR(cudaThreadSynchronize());
 
     cudaFree(g_volumes); // we don't use this anymore
 }
 
-void grid_updateVBO(float *vboptr, Vector3s *g_pos, int num_particles) {
+void grid_updateVBO(float *vboptr, grid_gpu_block_t *g_particles, int num_particles) {
 
     if (vboptr == NULL) {
         printf("oh no!!\n");
     }
     int gridSize = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
     kgrid_updateVBO <<< gridSize, kgrid_BLOCKSIZE_1D
-                    >>> (vboptr, g_pos, num_particles);
+                    >>> (vboptr, g_particles, num_particles);
 
     cudaError_t err = cudaGetLastError();
     if(err != cudaSuccess){
@@ -91,7 +150,7 @@ void grid_updateVBO(float *vboptr, Vector3s *g_pos, int num_particles) {
     GPU_CHECKERROR(cudaThreadSynchronize());
 }
 
-__global__ void kgrid_initializePositions(Vector3s *g_pos, FluidVolume* g_volumes,
+__global__ void kgrid_initializePositions(grid_gpu_block_t *g_particles, FluidVolume* g_volumes,
                                      int num_particles, int num_volumes) {
 
     int gid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -108,26 +167,41 @@ __global__ void kgrid_initializePositions(Vector3s *g_pos, FluidVolume* g_volume
     } while (offset + volume_size < gid);
 
     FluidVolume& volume = g_volumes[volume_index];
-    //FluidVolume& volume = g_volumes[0]; 
-    //printf("%f, %f\n", volume.m_minX, volume.m_maxX);
-    g_pos[gid] = kgrid_getFluidVolumePosition(volume, gid - offset);
-    //printf("%f, %f, %f\n", g_pos[gid][0], g_pos[gid][1], g_pos[gid][2]);
-    //g_pos[gid] = Vector3s(0.0f, 0.0f, 0.0f); 
+
+    g_particles[gid].pos = kgrid_getFluidVolumePosition(volume, gid - offset);
+    g_particles[gid].vec1 = Vector3s(0, 0, 0); // velocity
 }
 
-__global__ void kgrid_updateVBO(float* vbo, Vector3s *g_pos, int num_particles) {
+
+
+__global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int num_particles) {
 
     int gid = blockIdx.x * blockDim.x + threadIdx.x;
     if (gid < num_particles) {
     //if(gid < 10){
-        vbo[gid*4+0] = g_pos[gid][0];
-        vbo[gid*4+1] = g_pos[gid][1];
-        vbo[gid*4+2] = g_pos[gid][2];
+        vbo[gid*4+0] = g_particles[gid].pos.x;
+        vbo[gid*4+1] = g_particles[gid].pos.y;
+        vbo[gid*4+2] = g_particles[gid].pos.z;
         //vbo[gid*4+0] = 5.0f;
         //vbo[gid*4+1] = 5.0f;
         //vbo[gid*4+2] = 5.0f;
         vbo[gid*4+3] = 1.0f;
     }
+}
+
+__device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k) {
+
+    scalar x = pos.x;
+    scalar y = pos.y;
+    scalar z = pos.z;
+
+    i = (x - c_minX) / c_h;
+    j = (y - c_minY) / c_h;
+    k = (z - c_minZ) / c_h;
+}
+
+__device__ int kgrid_getGridIndex(int i, int j, int k) {
+    return (c_gridSizeX * c_gridSizeY * k) + (c_gridSizeX * j) + i;
 }
 
 __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k) {

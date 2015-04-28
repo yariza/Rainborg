@@ -17,11 +17,13 @@ typedef struct {
 } grid_gpu_block_t;
 
 extern "C" {
-  void grid_initGPUFluid(Vector3s **g_pos, Vector3s **g_vel,
-                         int **g_neighbors, int **g_gridIndex,
+  void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
+                         int **g_grid,
+                         grid_gpu_block_t **g_particles,
                          FluidVolume* h_volumes, int num_volumes,
-                         FluidBoundingBox* h_boundingbox);
+                         FluidBoundingBox* h_boundingbox,
+                         scalar h);
 
-  void grid_updateVBO(float *vboptr, Vector3s *g_pos, int num_particles);
+  void grid_updateVBO(float *vboptr, grid_gpu_block_t *g_particles, int num_particles);
 }
 #endif
