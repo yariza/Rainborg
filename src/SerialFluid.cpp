@@ -224,7 +224,6 @@ void SerialFluid::stepSystem(Scene& scene, scalar dt){
     preserveOwnBoundary(); 
     
     applydPToPredPos();
-     
     //std::cout << "building grid" << std::endl;  
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
