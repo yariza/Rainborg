@@ -5,6 +5,9 @@
 #define DEG_TO_RAD (PI / 180.0)
 #define RAD_TO_DEG (180.0 / PI)
 
+#ifdef GPU_ENABLED
+#include <cuda.h>
+#endif
 #include <glm/glm.hpp>
 
 typedef float scalar;  // so that we can deal with scalar without worrying about the underlying representation

@@ -140,6 +140,8 @@ void SerialFluid::setFPVel(int fp, const Vector3s& vel){
 void SerialFluid::setBoundingBox(FluidBoundingBox* bound){
     Fluid::setBoundingBox(bound);
 
+    std::cout << "bounding box" << std::endl;
+
     if(m_grid != NULL)
         free(m_grid);
     if(m_gridCount != NULL)
@@ -182,6 +184,7 @@ Vector4s* SerialFluid::getColors() const{
 void SerialFluid::loadFluidVolumes() {
 
     int numParticles = getNumParticles();
+    std::cout << "num particles: " << numParticles << std::endl;
 
     m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
     m_pcalc = (scalar *)malloc(numParticles * sizeof(scalar)); 
@@ -190,6 +193,7 @@ void SerialFluid::loadFluidVolumes() {
     m_ppos = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
     m_dpos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
     m_vel = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
+    memset(m_vel, 0, numParticles * sizeof(Vector3s));
     m_accumForce = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
     m_colors = (Vector4s *)malloc(numParticles * sizeof(Vector4s)); 
     m_gridInd = (int *)malloc(numParticles * 3 * sizeof(int));
@@ -210,10 +214,11 @@ void SerialFluid::stepSystem(Scene& scene, scalar dt){
 
     accumulateForce(scene); // makes more sense 
 
+    //printVec3(m_vel[0]); 
     updateVelocityFromForce(dt); 
     
     updatePredPosition(dt); 
-
+    
     // make sure that predicted positions don't go out of bounds here 
     memset(m_dpos, 0, getNumParticles() * sizeof(Vector3s)); 
     preserveOwnBoundary(); 
@@ -406,6 +411,7 @@ void SerialFluid::accumulateForce(Scene& scene){
         //m_accumForce[i*3+1] /= -m_fpmass;
         //m_accumForce[i*3+2] /= -m_fpmass;
     }
+    //printVec3(m_accumForce[0]); 
 }
 
 void SerialFluid::updateVelocityFromForce(scalar dt){
@@ -497,6 +503,7 @@ void SerialFluid::updateFinalPosition(){
 void SerialFluid::applydPToPredPos(){
     for(int i = 0; i < getNumParticles(); ++i){
         m_ppos[i] += m_dpos[i]; 
+        
         if(glm::length(m_dpos[i]) > 5.0){
             std::cout << "huge update at " << i << std::endl;
             std::cout << "  pressure: " << m_pcalc[i] << std::endl;
@@ -505,6 +512,7 @@ void SerialFluid::applydPToPredPos(){
             std::cout << "  grid count: " << m_gridCount[m_gridInd[i]] << std::endl;
 
         }
+        
     }
 }
 

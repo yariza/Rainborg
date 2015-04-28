@@ -1,3 +1,4 @@
+#ifdef GPU_ENABLED
 #include "GridGPUFluid.h"
 #include "gpu/GridGPUFluidKernel.h"
 #include "FluidSimpleGravityForce.h"
@@ -69,3 +70,4 @@ void GridGPUFluid::loadFluidVolumes() {
 void GridGPUFluid::updateVBO(float* dptrvert) {
   grid_updateVBO(dptrvert, d_particles, getNumParticles());
 }
+#endif

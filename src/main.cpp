@@ -97,7 +97,11 @@ void testBasicSetup(){
     FluidBoundingBox* fbox = new FluidBoundingBox(-0, 10, -0, 10, -0, 10);
 
     // Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3);
-    Fluid *fluid = new GridGPUFluid(2.0, 10000, .5, 3, 100, 3);
+    #ifdef GPU_ENABLED
+        Fluid *fluid = new GridGPUFluid(2.0, 10000, .5, 3, 100, 3);
+    #else
+        Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3); 
+    #endif
 
     FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
     fluid->insertFluidVolume(volume);
@@ -203,8 +207,11 @@ void loadScene( const std::string& file_name) {
         FluidBoundingBox* fbox = new FluidBoundingBox(-5, 10, -5, 10, -5, 10);
 
         Fluid *fluid;
-        if (g_gpu_mode)
+        if (g_gpu_mode){
+            #ifdef GPU_ENABLED
             fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
+            #endif
+        }
         else
             fluid = new SerialFluid(50000.0, 190000.0, 1., 3, 100, 3);
 

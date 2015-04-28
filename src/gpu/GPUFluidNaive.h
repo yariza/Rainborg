@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
+#include <cuda.h>
 #include <glm/glm.hpp>
 #include <curand.h>
 #include <curand_kernel.h>
