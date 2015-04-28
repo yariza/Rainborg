@@ -105,7 +105,7 @@ void testBasicSetup(){
     #ifdef GPU_ENABLED
         Fluid *fluid = new GridGPUFluid(2.0, 10000, .5, 3, 100, 3);
     #else
-        Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3); 
+        Fluid *fluid = new SerialFluid(1.0, 1000000.0, .5, 3, 100, 3);
     #endif
 
     FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
@@ -214,8 +214,7 @@ void loadScene( const std::string& file_name) {
             #endif
         }
         else
-            fluid = new SerialFluid(50000.0, 190000.0, 1., 3, 100, 3);
-        
+            fluid = new SerialFluid(1.0, 1000000.0, .5, 3, 100, 3); 
 
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
