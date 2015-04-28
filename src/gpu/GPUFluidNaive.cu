@@ -649,6 +649,7 @@ void updateVBOGPUFluid(float *vboptr){
         deviceHappy = true;
     }
     // Is sad the first call, then fine
+    std::cout << vboptr << std::endl;
     GPU_CHECKERROR(cudaThreadSynchronize());
 
 }

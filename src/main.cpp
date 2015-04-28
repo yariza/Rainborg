@@ -242,6 +242,7 @@ void loadScene( const std::string& file_name) {
         FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
         scene->insertFluidBoundary(fbrick);
 
+
         Stepper *stepper = new Stepper();
 
         // stepper.stepScene(scene, .01);
@@ -281,15 +282,19 @@ int main(int args, char **argv)
 
     // Wow this is going to be my terrible, terrible 'test' function thing
     // testBasicSetup();
+    
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
 
     #ifdef GPU_ENABLED
-    GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
+    if(g_gpu_mode){
+        GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
+        std::cout << "set device" << std::endl;
+    }
     #endif
 
     g_simulation->prepareForRender();
-
+ 
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
     std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
 
