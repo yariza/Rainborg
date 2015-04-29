@@ -87,52 +87,6 @@ std::string g_description;
 // gpu mode?
 bool g_gpu_mode;
 
-void testBasicSetup(){
-    // I guess.... try initializing a scene?
-
-    //initGPUFluid();
-
-
-    FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(-10.1, .0, .0);
-    //FluidSimpleGravityForce* sgff = new FluidSimpleGravityForce(Vector3s(.3, .2, .1));
-
-    Scene scene;
-    scene.insertFluidForce(sgf);
-    //scene.insertFluidForce(sgff);
-
-    FluidBoundingBox* fbox = new FluidBoundingBox(-0, 10, -0, 10, -0, 10);
-
-    // Fluid *fluid = new SerialFluid(2.0, 10000.0, .5, 3, 100, 3);
-    #ifdef GPU_ENABLED
-        Fluid *fluid = new GridGPUFluid(2.0, 10000, .5, 3, 100, 3);
-    #else
-        Fluid *fluid = new SerialFluid(1.0, 1000000.0, .5, 3, 100, 3);
-    #endif
-
-    FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, false);
-    fluid->insertFluidVolume(volume);
-
-
-    //fluid.setFPMass(2.0);
-    //fluid.setRestDensity(1.0);
-    // float x;
-    // float y;
-    // float z;
-    // for(int i = 0; i < 1000; ++i){
-    //     x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-    //     y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-    //     z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-    //     fluid->setFPPos(i, Vector3s(x, y, z));
-    //     fluid->setFPVel(i, Vector3s(0, 0, 0));
-    // }
-   //fluid->setFPPos(1, Vector3s(.2, .2, .1));
-    //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
-    fluid->setBoundingBox(fbox);
-
-    // printVec3(Vector3s(-0.3, 1, 3));
-
-}
-
 void printTimingResults(){
     gettimeofday(&endTime, 0);
     
@@ -211,14 +165,14 @@ void loadScene( const std::string& file_name) {
         Fluid *fluid;
         if (g_gpu_mode){
             #ifdef GPU_ENABLED
-            //fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
+            fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
             //fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
-            fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
+            //fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
             #endif
         }
-        else
+        else{
             fluid = new SerialFluid(1.0, 1000000.0, .5, 3, 100, 3); 
-
+        }
          //fluid.setFPMass(2.0);
          //fluid.setRestDensity(1.0);
          // float x;
@@ -238,13 +192,15 @@ void loadScene( const std::string& file_name) {
 
         //FluidVolume volume(0, 9, 0, 9, 0, 9, 30000, kFLUID_VOLUME_MODE_BOX, true);
         FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, true);
-        
+        FluidVolume volume2(0, 9, 9, 12, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, true);        
+
         fluid->insertFluidVolume(volume);
+        fluid->insertFluidVolume(volume2);
 
         scene->insertFluid(fluid);
 
-        FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
-        scene->insertFluidBoundary(fbrick);
+        //FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
+        //scene->insertFluidBoundary(fbrick);
 
     //#endif
 
