@@ -16,7 +16,7 @@ FluidVolume::FluidVolume()
 }
 
 FluidVolume::FluidVolume(scalar minX, scalar maxX, scalar minY, scalar maxY, scalar minZ, scalar maxZ,
-            int numParticles, fluid_volume_mode_t mode, bool random)
+            int numParticles, fluid_volume_mode_t mode, bool random, scalar r, scalar g, scalar b, scalar alpha)
 : m_minX(minX)
 , m_maxX(maxX)
 , m_minY(minY)
@@ -25,7 +25,8 @@ FluidVolume::FluidVolume(scalar minX, scalar maxX, scalar minY, scalar maxY, sca
 , m_maxZ(maxZ)
 , m_numParticles(numParticles)
 , m_mode(mode)
-, m_random(random) {
+, m_random(random)
+, m_color(r, g, b, alpha) {
 
     scalar xwid = maxX - minX;
     scalar ywid = maxY - minY;
@@ -46,6 +47,7 @@ FluidVolume::FluidVolume(const FluidVolume& otherVolume) {
     m_mode = otherVolume.m_mode;
     m_random = otherVolume.m_random;
     m_dens_cbrt = otherVolume.m_dens_cbrt;
+    m_color = otherVolume.m_color;
 }
 
 int FluidVolume::setSpacing(scalar h) {
@@ -114,3 +116,10 @@ void FluidVolume::setParticlePositions(Vector3s* pos, int offset) {
     }
 }
 
+
+void FluidVolume::setParticleColors(Vector4s* colors, int offset) {
+    for(int i = 0; i < m_numParticles; ++i){ 
+        colors[offset + i] = m_color;
+
+    }
+}

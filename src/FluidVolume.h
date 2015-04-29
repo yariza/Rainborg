@@ -15,14 +15,16 @@ struct FluidVolume {
     int m_numParticles;
     fluid_volume_mode_t m_mode;
     bool m_random;
+    Vector4s m_color;
 
     FluidVolume();
     FluidVolume(scalar minX, scalar maxX, scalar minY, scalar maxY, scalar minZ, scalar maxZ,
-                int numParticles, fluid_volume_mode_t mode, bool random);
+                int numParticles, fluid_volume_mode_t mode, bool random, scalar r=(81.0/255.0), scalar g=(163.0/255.0), scalar b=(255.0/255.0), scalar alpha = .5f);
     FluidVolume(const FluidVolume& otherVolume);
     
     void setParticlePositions(Vector3s* pos, int offset);
     int setSpacing(scalar h);
+    void setParticleColors(Vector4s *pos, int offset);
 };
 
 #endif

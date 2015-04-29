@@ -204,6 +204,7 @@ void SerialFluid::loadFluidVolumes() {
         FluidVolume& volume = m_volumes[i];
 
         volume.setParticlePositions(m_pos, offset);
+        volume.setParticleColors(m_colors, offset);
 
         offset += volume.m_numParticles;
     }

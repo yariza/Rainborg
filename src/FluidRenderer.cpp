@@ -4,7 +4,7 @@
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
 #include <cuda.h>
-#include "gpu/GPUFluidNaive.h"
+//#include "gpu/GPUFluidNaive.h"
 #include <helper_cuda.h>
 #include <helper_cuda_gl.h>
 
@@ -40,7 +40,6 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
       indices = new GLuint[num_particles];
 
         std::cout << "gpu and render" << std::endl;
-        std::cout << NUM_PARTICLES << std::endl;
 
         GLfloat x, y, z;
         for (int i=0; i<fluid->getNumParticles(); i++) {
@@ -105,6 +104,8 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
     glPointSize(5.0);
     glEnable(GL_POINT_SMOOTH);
 
+    int num_particles = m_fluid->getNumParticles();
+ 
     if (g_gpu_mode) {
 
         float *dptrvert=NULL;
@@ -122,7 +123,7 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
-        glDrawElements(GL_POINTS, NUM_PARTICLES, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_POINTS, num_particles, GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(position_location);
         #endif
@@ -135,13 +136,18 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
         }
 
         Vector3s* posArray = serialFluid->getFPPos();
+        Vector4s* colorArray = serialFluid->getColors();
 
+        
         glBegin(GL_POINTS);
             for (int i=0; i<serialFluid->getNumParticles(); i++) {
+                //glColor3f(); 
+                glColor4f(colorArray[i][0], colorArray[i][1], colorArray[i][2], colorArray[i][3]);
+                //glColor3f(colorArray[i][0], colorArray[i][1], colorArray[i][2]);
                 glVertex3f(posArray[i].x, posArray[i].y, posArray[i].z);
             }
         glEnd();
-
+        
     }
     m_shader.unbind();
 }
