@@ -85,7 +85,7 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
                         int max_neigh, 
                         FluidVolume* h_volumes, int num_volumes,
                         FluidBoundingBox* h_boundingBox,
-                        scalar h){
+                        scalar h, bool random){
 
     int num_particles = 0;
     for(int i = 0; i < num_volumes; i++){
@@ -107,9 +107,33 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     GPU_CHECKERROR(cudaMalloc((void **)&d_omega, num_particles * sizeof(Vector3s))); 
     #endif
 
-    int gridSize = ceil(num_particles / (1.0*naive_BLOCKSIZE_1D));
-    naive_initializePositions<<<gridSize, naive_BLOCKSIZE_1D>>>(*d_pos, g_volumes, num_particles, num_volumes); 
-    GPU_CHECKERROR(cudaGetLastError()); 
+    if(!random) {
+        int gridSize = ceil(num_particles / (1.0*naive_BLOCKSIZE_1D));
+        naive_initializePositions<<<gridSize, naive_BLOCKSIZE_1D>>>(*d_pos, g_volumes, num_particles, num_volumes); 
+        GPU_CHECKERROR(cudaGetLastError()); 
+    }
+    else{
+        std::cout << "random, yes?" << std::endl;
+        Vector3s *h_pos; 
+        GPU_CHECKERROR(cudaMallocHost((void **)&h_pos, num_particles * sizeof(Vector3s))); 
+       
+        int ind = 0;
+        for(int j = 0; j < num_volumes; ++j){
+            float x, y, z;
+            scalar width = h_volumes[j].m_maxX - h_volumes[j].m_minX;
+            scalar height = h_volumes[j].m_maxY - h_volumes[j].m_minY;
+            scalar depth = h_volumes[j].m_maxZ - h_volumes[j].m_minZ;
+            for(int i = 0; i < h_volumes[j].m_numParticles; ++i){
+                x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/ width) + h_volumes[j].m_minX;
+                y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/ height) + h_volumes[j].m_minY;
+                z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/ depth) + h_volumes[j].m_minZ;
+                h_pos[ind] = Vector3s(x, y, z); 
+                ++ind;
+            } 
+        }
+        GPU_CHECKERROR(cudaMemcpy((void *)*d_pos, (void *)h_pos, num_particles * sizeof(Vector3s), cudaMemcpyHostToDevice));
+        GPU_CHECKERROR(cudaFreeHost(h_pos));
+    }
 
     //setup bounding box constants
     scalar h_minX = h_boundingBox->minX();
@@ -219,7 +243,7 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
 
 
         // Preserve boundary
-        preserveFluidBoundaryWithUpdate<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_ppos, d_dpos, num_particles); 
+        preserveFluidBoundary<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_ppos, d_dpos, num_particles); 
         GPU_CHECKERROR(cudaGetLastError());
         GPU_CHECKERROR(cudaThreadSynchronize());
  

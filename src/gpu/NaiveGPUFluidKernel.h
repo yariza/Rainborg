@@ -24,7 +24,7 @@ extern "C" {
                         scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, int max_neigh,  
                         FluidVolume* h_volumes, int num_volumes,
                         FluidBoundingBox* h_boundingBox,
-                        scalar h);
+                        scalar h, bool random);
 
     void naive_updateVBO(float *vboptr, Vector3s *d_pos, int num_particles);
 
@@ -37,26 +37,6 @@ extern "C" {
                       scalar h,
                       Vector3s accumForce,
                       scalar dt);
-   /*
-  void naive_initGPUFluid(int **g_neighbors, int **g_gridIndex,
-                         int **g_grid,
-                         int **g_gridUniqueIndex, int **g_partUniqueIndex,
-                         grid_gpu_block_t **g_particles,
-                         FluidVolume* h_volumes, int num_volumes,
-                         FluidBoundingBox* h_boundingbox,
-                         scalar h);
 
-  void naive_stepFluid(int **g_neighbors, int **g_gridIndex,
-                      int **g_grid,
-                      int **g_gridUniqueIndex, int **g_partUniqueIndex,
-                      grid_gpu_block_t **g_particles,
-                      int num_particles,
-                      FluidBoundingBox* h_boundingbox,
-                      scalar h,
-                      Vector3s accumForce,
-                      scalar dt);
-
-  void naive_updateVBO(float *vboptr, grid_gpu_block_t *g_particles, int num_particles);
-*/
 }
 #endif

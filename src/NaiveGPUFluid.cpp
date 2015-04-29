@@ -5,9 +5,10 @@
 #include "Scene.h"
 
 #include <iostream>
-NaiveGPUFluid::NaiveGPUFluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors) 
+NaiveGPUFluid::NaiveGPUFluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors, bool random) 
 : Fluid(mass, p0, h, iters, maxNeighbors, minNeighbors)
 , m_eps(0.01)
+, m_random(random)
 {
 }
 
@@ -71,7 +72,7 @@ void NaiveGPUFluid::loadFluidVolumes() {
 
  naive_initGPUFluid(&d_pos, &d_vel, &d_ppos, &d_dpos, &d_omega, 
                         &d_pcalc, &d_lambda, &d_grid, &d_gridCount, &d_gridInd, m_maxNeighbors,
-                        h_volumes, m_volumes.size(), m_boundingBox, m_h);
+                        h_volumes, m_volumes.size(), m_boundingBox, m_h, m_random);
 
 }
 
