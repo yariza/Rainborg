@@ -8,7 +8,7 @@
 #include <thrust/pair.h>
 #include <thrust/execution_policy.h>
 
-#define GRID_ART_PRESSURE 0
+#define GRID_ART_PRESSURE 1
 
 const int kgrid_BLOCKSIZE_1D = 512;
 const int kgrid_BLOCKSIZE_REDUCED = 256;
@@ -84,6 +84,7 @@ __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int n
 __global__ void kgrid_applyForces(grid_gpu_block_t *g_particles,
                                   int num_particles,
                                   Vector3s accumForce,
+                                  scalar mass,
                                   scalar dt);
 
 // clear grid
@@ -113,6 +114,7 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
 __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
                                       int num_particles,
                                       int *g_neighbors,
+                                      scalar mass,
                                       scalar h,
                                       scalar p0);
 
@@ -305,6 +307,7 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                     int num_particles,
                     FluidBoundingBox* h_boundingBox,
                     int iters,
+                    scalar mass,
                     scalar h,
                     scalar p0,
                     Vector3s accumForce,
@@ -321,7 +324,7 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
 
     // step 1: apply forces, predict position
     kgrid_applyForces <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
-                      >>> (*g_particles, num_particles, accumForce, dt);
+                      >>> (*g_particles, num_particles, accumForce, mass, dt);
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaDeviceSynchronize());
 
@@ -340,7 +343,7 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
         size_t lambda_shared_bytes = sizeof(Vector3s) * kgrid_NUM_NEIGHBORS * kgrid_BLOCKSIZE_1D;
         kgrid_calculateLambda <<< blocksPerParticles, kgrid_BLOCKSIZE_1D, lambda_shared_bytes
                               >>> (*g_particles, num_particles,
-                                   *g_neighbors, h, p0);
+                                   *g_neighbors, mass, h, p0);
         GPU_CHECKERROR(cudaGetLastError());
 
         // step 4: calculate dpos
@@ -432,12 +435,13 @@ __host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
 __global__ void kgrid_applyForces(grid_gpu_block_t *g_particles,
                                   int num_particles,
                                   Vector3s accumForce,
+                                  scalar mass,
                                   scalar dt) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     if (id < num_particles) {
         Vector3s pos = g_particles[id].pos;
         Vector3s vel = g_particles[id].vec1;
-        vel += dt * accumForce;
+        vel += dt * accumForce / mass;
         Vector3s ppos = pos + dt * vel;
         g_particles[id].vec1 = vel; //velocity
         g_particles[id].vec2 = ppos; // predicted pos
@@ -514,17 +518,10 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
     if (particle_id >= num_particles)
         return;
 
-    int *array_end = s_mem + kgrid_MAX_CELL_SIZE*blockDim.x*2;
-    if ((void*)(s_distances+kgrid_MAX_CELL_SIZE) > (void*)array_end) {
-        printf("thread %d: %ld > %ld\n", particle_id, s_distances+kgrid_MAX_CELL_SIZE,
-               array_end);
-        return;
-    }
-
     // if (particle_id != 0)
         // return;
 
-    Vector3s pos = g_particles[particle_id].pos;
+    Vector3s pos = g_particles[particle_id].vec2;
     int grid_index = g_gridIndex[particle_id];
     int i, j, k;
     kgrid_getGridLocationFromIndex(grid_index, i, j, k);
@@ -565,7 +562,7 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
                         printf("oh god oh god: %d - %d", particle_id, cur_particle_id);
                     }
 
-                    cur_pos = g_particles[cur_particle_id].pos;
+                    cur_pos = g_particles[cur_particle_id].vec2;
 
                     dist = glm::length(cur_pos - pos);
 
@@ -579,6 +576,7 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
                                 // we deserve a spot! replace id with
                                 // max.
                                 maxDist = dist;
+
 
                                 s_particles[max] = cur_particle_id;
                                 s_distances[max] = dist;
@@ -623,21 +621,30 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
     thrust::device_ptr<int> t_particles = thrust::device_pointer_cast(s_particles);
     thrust::device_ptr<float> t_distances = thrust::device_pointer_cast(s_distances);
 
-    thrust::stable_sort_by_key(thrust::seq, t_distances, t_distances+num_candidates,
+    thrust::sort_by_key(thrust::seq, t_distances, t_distances+num_candidates,
                         t_particles);
 
     int *g_my_neighbors = g_neighbors + (kgrid_NUM_NEIGHBORS * particle_id);
 
     // take first k particles and put them in neighbors list
     // put -1 if candidates don't exist
+    Vector3s delta(0,0,0);
+
     for (int n_i = 0; n_i < kgrid_NUM_NEIGHBORS; n_i++) {
         if (n_i < num_candidates) {
             g_my_neighbors[n_i] = s_particles[n_i];
+
+            Vector3s other_pos = g_particles[s_particles[n_i]].vec2;
+            delta += (other_pos - pos);
+
         }
         else {
             g_my_neighbors[n_i] = -1;
         }
     }
+
+    delta /= num_candidates;
+    delta *= 100.0f;
 }
 
 /// calculate lambda - by particle
@@ -646,6 +653,7 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
 __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
                                       int num_particles,
                                       int *g_neighbors,
+                                      scalar mass,
                                       scalar h,
                                       scalar p0) {
     extern __shared__ Vector3s s_neighbor_ppos[];
@@ -682,6 +690,10 @@ __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
     for (int i=0; i<neighbor_count; i++) {
         Vector3s &other_ppos = s_my_neighbor_ppos[i];
         press += kgrid_Poly6Kernel(ppos, other_ppos, h);
+    }
+    press *= mass;
+    if (neighbor_count <= 2) {
+        press = p0;
     }
 
     scalar top = (press / p0) - 1.0;
@@ -761,9 +773,12 @@ __global__ void kgrid_preserveFluidBoundary(grid_gpu_block_t *g_particles,
         return;
 
     grid_gpu_block_t my_particle = g_particles[particle_id];
-    scalar posX = my_particle.vec2.x; // ppos
-    scalar posY = my_particle.vec2.y;
-    scalar posZ = my_particle.vec2.z;
+    Vector3s ppos = my_particle.vec2;
+    Vector3s dpos = my_particle.vec3;
+    Vector3s pos = ppos + dpos;
+    scalar posX = pos.x;
+    scalar posY = pos.y;
+    scalar posZ = pos.z;
 
     if (posX < c_minX)
         posX = c_minX + kgrid_EPS;
@@ -778,7 +793,7 @@ __global__ void kgrid_preserveFluidBoundary(grid_gpu_block_t *g_particles,
     else if (posZ > c_maxZ)
         posZ = c_maxZ - kgrid_EPS;
 
-    g_particles[particle_id].vec2 = Vector3s(posX, posY, posZ);
+    g_particles[particle_id].vec3 = Vector3s(posX, posY, posZ) - ppos;
 }
 
 // update ppos
