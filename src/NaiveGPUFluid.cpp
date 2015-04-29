@@ -42,8 +42,8 @@ void NaiveGPUFluid::stepSystem(Scene& scene, scalar dt) {
     }
   }
 
-    naive_stepFluid(d_pos, d_vel, d_ppos, d_dpos, m_fpmass,
-                      getNumParticles(), 
+    naive_stepFluid(d_pos, d_vel, d_ppos, d_dpos, d_omega, d_pcalc, d_lambda, m_fpmass,
+                      getNumParticles(), m_maxNeighbors, d_grid, d_gridCount, d_gridInd, 
                       m_boundingBox,
                       m_h,
                       accumForce,
@@ -70,7 +70,7 @@ void NaiveGPUFluid::loadFluidVolumes() {
   }
 
  naive_initGPUFluid(&d_pos, &d_vel, &d_ppos, &d_dpos, &d_omega, 
-                        &d_pcalc, &d_lambda, &d_grid, &d_gridCount, &d_gridInd, 
+                        &d_pcalc, &d_lambda, &d_grid, &d_gridCount, &d_gridInd, m_maxNeighbors,
                         h_volumes, m_volumes.size(), m_boundingBox, m_h);
 
 }

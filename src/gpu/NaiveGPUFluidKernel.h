@@ -5,14 +5,20 @@
 #include "../FluidVolume.h"
 #include "../MathDefs.h"
 
-#define VORTICITY 0
-#define XSPH 0
-#define ART_PRESSURE 0
+#define naive_VORTICITY 0
+#define naive_VORT_EPS .0001
+#define naive_XSPH 0
+#define naive_C .0001
+#define naive_ART_PRESSURE 0
+#define naive_N 4
+#define naive_DQ .3
+#define naive_K .1
+
 
 extern "C" {
  
     void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
-                        scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, 
+                        scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, int max_neigh,  
                         FluidVolume* h_volumes, int num_volumes,
                         FluidBoundingBox* h_boundingBox,
                         scalar h);
@@ -22,8 +28,8 @@ extern "C" {
     void naive_cleanUp(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
                         scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd);
 
-    void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, scalar fp_mass,
-                      int num_particles,
+    void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, Vector3s* d_omega, scalar *d_pcalc, scalar *d_lambda, scalar fp_mass,
+                      int num_particles, int max_neigh, int *d_grid, int *d_gridCount, int *d_gridInd, 
                       FluidBoundingBox* h_boundingbox,
                       scalar h,
                       Vector3s accumForce,

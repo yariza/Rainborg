@@ -9,9 +9,6 @@
 #include <thrust/execution_policy.h>
 
 const int naive_BLOCKSIZE_1D = 512;
-const int naive_BLOCKSIZE_REDUCED = 256;
-const int naive_MAX_NEIGHBORS = 10;
-const int naive_MIN_NEIGHBORS = 2;
 
 bool naive_deviceHappy = true;
 
@@ -41,6 +38,13 @@ __device__ Vector3s naive_getFluidVolumePosition(FluidVolume& volume, int k);
 
 
  // GPU functions
+
+__device__ __host__ scalar naive_wPoly6Kernel(Vector3s pi, Vector3s pj, scalar H);
+
+
+__device__ __host__ Vector3s naive_wSpikyKernelGrad(Vector3s pi, Vector3s pj, scalar H);
+
+
 __global__ void naive_initializePositions(Vector3s *d_pos, FluidVolume* g_volumes,
                                      int num_particles, int num_volumes);
 
@@ -50,8 +54,13 @@ __global__ void naive_updateFromForce(Vector3s *d_pos, Vector3s *d_vel, Vector3s
 
 __global__ void naive_updateValForReals(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, scalar dt, int num_particles);  
 
+__global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar h, int num_particles, int max_neigh);
+
+__global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar dt, scalar fp_mass, int num_particles, int max_neigh);
+
 void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
                         scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, 
+                        int max_neigh, 
                         FluidVolume* h_volumes, int num_volumes,
                         FluidBoundingBox* h_boundingBox,
                         scalar h){
@@ -72,7 +81,7 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     GPU_CHECKERROR(cudaMalloc((void **)d_pcalc, num_particles * sizeof(scalar)));
     GPU_CHECKERROR(cudaMalloc((void **)d_lambda, num_particles * sizeof(scalar)));
 
-    #if VORTICITY > 0 
+    #if naive_VORTICITY > 0 
     GPU_CHECKERROR(cudaMalloc((void **)&d_omega, num_particles * sizeof(Vector3s))); 
     #endif
 
@@ -114,7 +123,7 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
                                       sizeof(scalar)));
 
 
-    GPU_CHECKERROR(cudaMalloc((void **)d_grid, gridSizeX * gridSizeY * gridSizeZ * naive_MAX_NEIGHBORS * sizeof(int)));
+    GPU_CHECKERROR(cudaMalloc((void **)d_grid, gridSizeX * gridSizeY * gridSizeZ * max_neigh * sizeof(int)));
     GPU_CHECKERROR(cudaMalloc((void **)d_gridCount, gridSizeX * gridSizeY * gridSizeZ *sizeof(int)));
     GPU_CHECKERROR(cudaMalloc((void **)d_gridInd, 3 * num_particles * sizeof(int)));
 
@@ -127,8 +136,10 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     std::cout << "Done fluid init on gpu" << std::endl;
 }
 
-void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, scalar fp_mass,
-                      int num_particles,
+void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, Vector3s *d_omega, 
+                      scalar *d_pcalc, scalar *d_lambda, scalar fp_mass,
+                      int num_particles, int max_neigh, int *d_grid, int *d_gridCount, int *d_gridInd,
+                      
                       FluidBoundingBox* h_boundingbox,
                       scalar h,
                       Vector3s accumForce,
@@ -166,7 +177,22 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
 
-    //adjustVel(dt);
+    // adjust velocity to taste
+    #if naive_XSPH == 0
+    return;
+    #endif
+
+    updateXSPHAndOmega<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, h, num_particles, max_neigh);
+
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
+    
+    #if naive_VORTICITY == 0
+    return;
+    #endif
+    applyVorticity<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, dt, fp_mass, num_particles, max_neigh);
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
 }
 
 void naive_updateVBO(float *vboptr, Vector3s *d_pos, int num_particles){
@@ -194,7 +220,7 @@ void naive_cleanUp(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector
     GPU_CHECKERROR(cudaFree(*d_vel));
     GPU_CHECKERROR(cudaFree(*d_ppos));
     GPU_CHECKERROR(cudaFree(*d_dpos));
-    #if VORTICITY > 0
+    #if naive_VORTICITY > 0
     GPU_CHECKERROR(cudaFree(*d_omega));
     #endif
     GPU_CHECKERROR(cudaFree(*d_pcalc));
@@ -307,6 +333,107 @@ __global__ void naive_updateValForReals(Vector3s *d_pos, Vector3s *d_vel, Vector
         d_pos[id] = d_ppos[id];
     }
 }
+
+__global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar h, int num_particles, int max_neigh){
+    int p = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(p >= num_particles)
+        return;
+    
+    Vector3s dv(0.0, 0.0, 0.0);
+    Vector3s vi = d_vel[p];
+    Vector3s pi = d_pos[p];
+    Vector3s pj; 
+    int gi; 
+    int q; 
+    Vector3s vij;
+
+    #if naive_VORTICITY > 0
+    Vector3s omega(0.0, 0.0, 0.0); 
+    #endif
+    
+
+    for(int i = max(0, d_gridInd[p*3]-1); i <= min(c_gridSizeX-1, d_gridInd[p*3]+1); ++i){
+        for(int j = max(0, d_gridInd[p*3+1]-1); j <= min(c_gridSizeY-1, d_gridInd[p*3+1]+1); ++j){
+            for(int k = max(0, d_gridInd[p*3+2]-1); k <= min(c_gridSizeZ-1, d_gridInd[p*3+2]+1); ++k){
+                gi = naive_getGridIndex(i, j, k);
+                for(int n = 0; n < d_gridCount[gi]; ++n){ // for all particles in the grid
+                    q = d_grid[gi * max_neigh + n];
+                    vij = d_vel[q]-vi;
+                    pj = d_pos[q]; 
+                    dv += vij * naive_wPoly6Kernel(pi, pj, h);    
+
+                    #if naive_VORTICITY > 0
+                    omega += glm::cross(vij, naive_wSpikyKernelGrad(pi, pj, h)); 
+                    #endif          
+                }
+            }
+        }
+    }
+
+    dv *= naive_C;
+    d_vel[p] += dv; 
+    #if naive_VORTICITY > 0
+    d_omega[p] = omega;
+    #endif
+}
+
+__global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar dt, scalar fp_mass, int num_particles, int max_neigh){
+    int p = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(p >= num_particles)
+        return;
+   
+    Vector3s pi = d_pos[p];
+    Vector3s pj; 
+    Vector3s omega = d_omega[p]; 
+    scalar dom;
+    int gi;
+    int q;
+    Vector3s vort(0, 0, 0); 
+    Vector3s dp;
+    
+
+    for(int i = max(0, d_gridInd[p*3]-1); i <= min(c_gridSizeX-1, d_gridInd[p*3]+1); ++i){
+        for(int j = max(0, d_gridInd[p*3+1]-1); j <= min(c_gridSizeY-1, d_gridInd[p*3+1]+1); ++j){
+            for(int k = max(0, d_gridInd[p*3+2]-1); k <= min(c_gridSizeZ-1, d_gridInd[p*3+2]+1); ++k){
+                gi = naive_getGridIndex(i, j, k);
+                for(int n = 0; n < d_gridCount[gi]; ++n){ // for all particles in the grid
+                    q = d_grid[gi * max_neigh + n];
+                    pj = d_pos[q]; 
+                    dp = pj - pi; 
+                    dom = glm::length(omega - d_omega[q]);     
+                    vort[0] += dom / (dp[0]+.001);
+                    vort[1] += dom / (dp[1]+.001);
+                    vort[2] += dom / (dp[2]+.001);                      
+                }
+            }
+        }
+    }
+    vort /= (glm::length(vort) + .001);    
+    d_vel[p] += (scalar)(dt * naive_VORT_EPS / fp_mass) * (glm::cross(vort, omega)); 
+}
+
+
+__device__ __host__ scalar naive_wPoly6Kernel(Vector3s pi, Vector3s pj, scalar H){
+    scalar r = glm::distance(pi, pj); 
+    if(r > H || r < 0)
+        return 0; 
+
+    r = ((H * H) - (r * r)); 
+    r = r * r * r; // (h^2 - r^2)^3
+    return r * (315.0 / (64.0 * PI * H * H * H * H * H * H * H * H * H));
+
+}
+
+__device__ __host__ Vector3s naive_wSpikyKernelGrad(Vector3s pi, Vector3s pj, scalar H){
+    Vector3s dp = pi - pj; 
+    scalar r = glm::length(dp);  
+    if(r > H || r < 0)
+        return Vector3s(0.0, 0.0, 0.0); 
+    scalar scale = 45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r); 
+    return scale * dp / (r+.0001f); 
+//    return scale * dp; 
+}
+
 
 
 #endif
