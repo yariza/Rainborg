@@ -48,12 +48,10 @@ __host__ void hgrid_getGridSize(FluidBoundingBox* fbox, scalar h,
 // helper function for getting k nearest neighbors
 __host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
                                           int **g_grid,
-                                          int **g_gridUniqueIndex, int **g_partUniqueIndex,
                                           grid_gpu_block_t **g_particles,
                                           int num_particles,
                                           scalar h,
-                                          int grid_size,
-                                          int *grid_unique_size);
+                                          int grid_size);
 
 __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k);
 
@@ -74,8 +72,7 @@ __global__ void kgrid_clearGrid(int *g_grid, int grid_size);
 // get grid indices
 __global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
                                      int num_particles,
-                                     int *g_gridIndex,
-                                     int *g_partUniqueIndex);
+                                     int *g_gridIndex);
 
 // get grid cells
 __global__ void kgrid_setGridCells(int *g_gridIndex,
@@ -124,7 +121,6 @@ __global__ void kgrid_clearGrid(int *grid, int grid_size);
 
 void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
                        int **g_grid,
-                       int **g_gridUniqueIndex, int **g_partUniqueIndex,
                        grid_gpu_block_t **g_particles,
                        FluidVolume* h_volumes, int num_volumes,
                        FluidBoundingBox* h_boundingBox,
@@ -155,14 +151,6 @@ void grid_initGPUFluid(int **g_neighbors, int **g_gridIndex,
 
     // allocate grid index array (num_particles * int)
     GPU_CHECKERROR(cudaMalloc((void **)g_gridIndex,
-                              sizeof(int)*num_particles));
-
-    // allocate grid unique index array (initially num_particles * int)
-    GPU_CHECKERROR(cudaMalloc((void **)g_gridUniqueIndex,
-                              sizeof(int)*num_particles));
-
-    // allocate part unique index array (initially num_particles * int)
-    GPU_CHECKERROR(cudaMalloc((void **)g_partUniqueIndex,
                               sizeof(int)*num_particles));
 
 
@@ -280,7 +268,6 @@ __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int n
 
 void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                     int **g_grid,
-                    int **g_gridUniqueIndex, int **g_partUniqueIndex,
                     grid_gpu_block_t **g_particles,
                     int num_particles,
                     FluidBoundingBox* h_boundingBox,
@@ -304,18 +291,14 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
 
 
     // step 2: find k nearest neighbors
-    int grid_unique_size;
     hgrid_findKNearestNeighbors(g_neighbors, g_gridIndex,
                                 g_grid,
-                                g_gridUniqueIndex, g_partUniqueIndex,
                                 g_particles,
                                 num_particles,
                                 h,
-                                grid_size,
-                                &grid_unique_size);
+                                grid_size);
 
     // step 3a: calculate pressure
-
     
 
     // step 3b: calculate lambda
@@ -344,12 +327,10 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
 
 __host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
                                           int **g_grid,
-                                          int **g_gridUniqueIndex, int **g_partUniqueIndex,
                                           grid_gpu_block_t **g_particles,
                                           int num_particles,
                                           scalar h,
-                                          int grid_size,
-                                          int *grid_unique_size) {
+                                          int grid_size) {
     int blocksPerParticles = ceil(num_particles / (kgrid_BLOCKSIZE_1D*1.0));
     int blocksPerGridCells = ceil(grid_size / (kgrid_BLOCKSIZE_1D*1.0));
     int blocksPerPartReduced = ceil(num_particles / (kgrid_BLOCKSIZE_REDUCED*1.0));
@@ -361,7 +342,7 @@ __host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
 
     // step 2b: get gridIDs
     kgrid_getGridIndices <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
-                         >>> (*g_particles, num_particles, *g_gridIndex, *g_partUniqueIndex);
+                         >>> (*g_particles, num_particles, *g_gridIndex);
     GPU_CHECKERROR(cudaGetLastError());
 
     // step 2c: sort particles by gridID
@@ -377,26 +358,8 @@ __host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
                        >>> (*g_gridIndex, num_particles, *g_grid, grid_size);
     GPU_CHECKERROR(cudaGetLastError());
 
-    // step 2e: find unique grid cells / particles, find number unique cells
-    thrust::device_ptr<int> t_gridUniqueIndex =
-        thrust::device_pointer_cast(*g_gridUniqueIndex);
-    thrust::device_ptr<int> t_partUniqueIndex =
-        thrust::device_pointer_cast(*g_partUniqueIndex);
-
-    // copy over to grid unique index
-    thrust::pair<thrust::device_ptr<int>, thrust::device_ptr<int> > t_unique_end =
-        thrust::unique_by_key_copy(thrust::device,
-                                   t_gridIndex,
-                                   t_gridIndex + num_particles,
-                                   t_partUniqueIndex,
-                                   t_gridUniqueIndex,
-                                   t_partUniqueIndex);
-
     GPU_CHECKERROR(cudaDeviceSynchronize());
-    *grid_unique_size = t_unique_end.first - t_gridUniqueIndex;
 
-    // std::cout << "unique size is: " << grid_unique_size << std::endl;
-    // std::cout << "grid size is : " << grid_size << std::endl;
     // step 2f: find k nearest neighbors
 
     assert(sizeof(int) == sizeof(float));
@@ -433,12 +396,11 @@ __global__ void kgrid_clearGrid(int *g_grid, int grid_size) {
     }
 }
 
-/// Get Grid Indices (also setup unique particle index)
+/// Get Grid Indices
 
 __global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
                                      int num_particles,
-                                     int *g_gridIndex,
-                                     int *g_partUniqueIndex) {
+                                     int *g_gridIndex) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     if (id < num_particles) {
         Vector3s pos = g_particles[id].pos;
@@ -446,7 +408,6 @@ __global__ void kgrid_getGridIndices(grid_gpu_block_t *g_particles,
         kgrid_getGridLocation(pos, i, j, k);
         int index = kgrid_getGridIndex(i, j, k);
         g_gridIndex[id] = index;
-        g_partUniqueIndex[id] = id;
     }
 }
 
