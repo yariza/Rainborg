@@ -5,6 +5,8 @@
 #include "../FluidVolume.h"
 #include "../MathDefs.h"
 
+#define GRID_ART_PRESSURE 1
+
 typedef struct {
   Vector3s pos;
   Vector3s vec1;

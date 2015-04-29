@@ -14,6 +14,10 @@ const int kgrid_NUM_NEIGHBORS = 5;
 const int kgrid_MAX_CELL_SIZE = 20;
 
 const scalar kgrid_RELAXATION = 0.01;
+// artificial pressure constants
+const scalar kgrid_DELTA_Q_SCALE = 0.1;
+const scalar kgrid_ART_PRESSURE_K = 0.1;
+const scalar kgrid_ART_PRESSURE_N = 6;
 
 bool grid_deviceHappy = true;
 
@@ -107,6 +111,13 @@ __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
                                       int *g_neighbors,
                                       scalar h,
                                       scalar p0);
+
+// calculate dpos
+__global__ void kgrid_calculateDPos(grid_gpu_block_t *g_particles,
+                                    int num_particles,
+                                    int *g_neighbors,
+                                    scalar h, scalar p0);
+
 // TODO
 
 
@@ -317,7 +328,10 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
     GPU_CHECKERROR(cudaGetLastError());
 
     // step 4: calculate dpos
-    
+    kgrid_calculateDPos <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                        >>> (*g_particles, num_particles,
+                             *g_neighbors, h, p0);
+    GPU_CHECKERROR(cudaGetLastError());
 
     // TODO
     GPU_CHECKERROR(cudaDeviceSynchronize());
@@ -564,6 +578,9 @@ __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
     if (particle_id >= num_particles)
         return;
 
+    // note that this is a copy of a struct. Don't output to this!
+    grid_gpu_block_t my_particle = g_particles[particle_id];
+
     // copy over global memory to shared block
     // also keep track of actual neighbor count
     int neighbor_count;
@@ -581,7 +598,7 @@ __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
     }
 
     // get our own ppos
-    Vector3s ppos = g_particles[particle_id].vec2;
+    Vector3s ppos = my_particle.vec2;
 
     scalar press = 0;
     // iterate over neighbor array
@@ -614,8 +631,51 @@ __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
 }
 
 // Calculate dpos
+// (vec2 = ppos, sca1 = lambda) --> (vec3 = dpos)
+__global__ void kgrid_calculateDPos(grid_gpu_block_t *g_particles,
+                                    int num_particles,
+                                    int *g_neighbors,
+                                    scalar h, scalar p0) {
 
+    int particle_id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (particle_id >= num_particles)
+        return;
 
+    // note that this is a copy of a struct. Don't output to this!
+    grid_gpu_block_t my_particle = g_particles[particle_id];
+
+    int *g_my_neighbors = g_neighbors + (kgrid_NUM_NEIGHBORS * particle_id);
+
+    // get our own ppos and lambda
+    Vector3s ppos = my_particle.vec2;
+    scalar lambda = my_particle.sca1;
+
+    Vector3s dp(0, 0, 0);
+#if GRID_ART_PRESSURE == 1
+    // some distance from position
+    Vector3s q = kgrid_DELTA_Q_SCALE*h * glm::vec3(1.0f) + ppos;
+#endif
+
+    scalar scorr = 0;
+    for (int i=0; i<kgrid_NUM_NEIGHBORS; i++) {
+        int neighbor_id = g_my_neighbors[i];
+        if (neighbor_id == -1)
+            break;
+
+        grid_gpu_block_t other_particle = g_particles[neighbor_id];
+        Vector3s other_ppos = other_particle.vec2;
+        scalar other_lambda = other_particle.sca1;
+
+#if GRID_ART_PRESSURE == 1
+        scalar top = kgrid_Poly6Kernel(ppos, other_ppos, h);
+        scalar dq_kernel = kgrid_Poly6Kernel(ppos, q, h);
+        scorr = -1.0f * kgrid_ART_PRESSURE_K * pow(top/dq_kernel, kgrid_ART_PRESSURE_N);
+#endif
+        dp += (other_lambda + lambda + scorr) * kgrid_SpikyKernelGrad(ppos, other_ppos, h);
+    }
+
+    g_particles[particle_id].vec3 = dp / p0; // delta pos mapped to vec3
+}
 
 /// TODO
 
