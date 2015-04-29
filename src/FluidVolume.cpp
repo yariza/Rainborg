@@ -48,6 +48,17 @@ FluidVolume::FluidVolume(const FluidVolume& otherVolume) {
     m_dens_cbrt = otherVolume.m_dens_cbrt;
 }
 
+int FluidVolume::setSpacing(scalar h) {
+    scalar xwid = m_maxX - m_minX;
+    scalar ywid = m_maxY - m_minY;
+    scalar zwid = m_maxZ - m_minZ;
+
+    m_dens_cbrt = h;
+    scalar inv_dens = h*h*h;
+    m_numParticles = xwid*ywid*zwid / inv_dens;
+    return m_numParticles;
+}
+
 void FluidVolume::setParticlePositions(Vector3s* pos, int offset) {
 
     if (m_mode == kFLUID_VOLUME_MODE_BOX) {

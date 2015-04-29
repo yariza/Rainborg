@@ -22,6 +22,7 @@ struct FluidVolume {
     FluidVolume(const FluidVolume& otherVolume);
     
     void setParticlePositions(Vector3s* pos, int offset);
+    int setSpacing(scalar h);
 };
 
 #endif

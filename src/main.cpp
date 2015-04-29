@@ -93,7 +93,8 @@ void printTimingResults(){
     totalTime = (1000000.0*(endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec))/1000.0; // milliseconds
     avgTime = totalTime / g_current_step; 
     std::cout << "Total time: " << totalTime << " ms" << std::endl;
-    std::cout << "Avg. frame time: " << avgTime << " ms" << std::endl;
+    std::cout << "Avg. frame time: " << avgTime << " ms "
+              << "(" << 1000.0f/avgTime << ") fps" << std::endl;
 }
 
 
@@ -160,12 +161,12 @@ void loadScene( const std::string& file_name) {
         FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(0, -10.0, 0);
         scene->insertFluidForce(sgf);
 
-        FluidBoundingBox* fbox = new FluidBoundingBox(-15, 10, -5, 15, -10, 10);
+        FluidBoundingBox* fbox = new FluidBoundingBox(0, 20, 0, 20, 0, 20);
 
         Fluid *fluid;
         if (g_gpu_mode){
             #ifdef GPU_ENABLED
-            fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
+            fluid = new GridGPUFluid(1.0, 1000000, 0.5, 20, 100, 3);
             //fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
             //fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
             #endif
@@ -191,8 +192,11 @@ void loadScene( const std::string& file_name) {
         fluid->setBoundingBox(fbox);
 
         //FluidVolume volume(0, 9, 0, 9, 0, 9, 30000, kFLUID_VOLUME_MODE_BOX, true);
-        FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, true);
-        FluidVolume volume2(0, 9, 9, 12, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, true);        
+        FluidVolume volume(0, 20, 0, 2, 0, 20, 10000, kFLUID_VOLUME_MODE_BOX, true);
+        FluidVolume volume2(0, 10, 3, 20, 0, 10, 10000, kFLUID_VOLUME_MODE_BOX, true);        
+
+        std::cout << "num1: " << volume.setSpacing(0.5) << std::endl;
+        std::cout << "num2: " << volume2.setSpacing(0.5) << std::endl;
 
         fluid->insertFluidVolume(volume);
         fluid->insertFluidVolume(volume2);
@@ -302,8 +306,8 @@ void stepSystem() {
     }
 
     if (g_rendering_enabled) {
-        std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen
-                  << (g_current_step*g_dt) << std::endl;
+        // std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen
+                  // << (g_current_step*g_dt) << std::endl;
     }
     
     g_current_step++;

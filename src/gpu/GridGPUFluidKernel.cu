@@ -9,7 +9,7 @@
 #include <thrust/execution_policy.h>
 
 #define GRID_ART_PRESSURE 1
-#define GRID_VORTICITY 0
+#define GRID_VORTICITY 1
 
 const int kgrid_BLOCKSIZE_1D = 512;
 const int kgrid_BLOCKSIZE_REDUCED = 256;
@@ -1001,6 +1001,7 @@ __device__ void kgrid_getGridLocationFromIndex(int id, int &i, int &j, int &k) {
 __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k) {
 
     if (volume.m_mode == kFLUID_VOLUME_MODE_BOX) {
+
         //random mode not supported
         int xlen = (volume.m_maxX - volume.m_minX) / volume.m_dens_cbrt;
         int ylen = (volume.m_maxY - volume.m_minY) / volume.m_dens_cbrt;
@@ -1010,11 +1011,16 @@ __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k) {
         int yindex = (k / zlen) % ylen;
         int zindex = k % zlen;
 
+        // add small epsilon to semi-randomize particles
+        scalar xeps = volume.m_dens_cbrt*0.01 * ((yindex+zindex)%2);
+        scalar yeps = volume.m_dens_cbrt*0.01 * ((xindex+zindex)%2);
+        scalar zeps = volume.m_dens_cbrt*0.01 * ((xindex+yindex)%2);
+
         // printf("%f - %d, %d, %d\n", volume.m_dens_cbrt, xindex, yindex, zindex);
 
-        scalar x = xindex * volume.m_dens_cbrt;
-        scalar y = yindex * volume.m_dens_cbrt;
-        scalar z = zindex * volume.m_dens_cbrt;
+        scalar x = xindex * volume.m_dens_cbrt + xeps;
+        scalar y = yindex * volume.m_dens_cbrt + yeps;
+        scalar z = zindex * volume.m_dens_cbrt + zeps;
         return Vector3s(x, y, z);
     }
     // sphere mode not supported
