@@ -43,7 +43,7 @@ void NaiveGPUFluid::stepSystem(Scene& scene, scalar dt) {
   }
 
     naive_stepFluid(d_pos, d_vel, d_ppos, d_dpos, d_omega, d_pcalc, d_lambda, m_fpmass,
-                      getNumParticles(), m_maxNeighbors, d_grid, d_gridCount, d_gridInd, 
+                      getNumParticles(), m_maxNeighbors, d_grid, d_gridCount, d_gridInd, m_iters, m_p0,  
                       m_boundingBox,
                       m_h,
                       accumForce,
