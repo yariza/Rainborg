@@ -74,6 +74,7 @@ scalar g_dt = 0.0;
 double totalTime = 0;
 double avgTime = 0;
 struct timeval startTime, endTime;
+int startStep;
 
 // Simulation state
 bool g_paused = true;
@@ -91,7 +92,7 @@ void printTimingResults(){
     gettimeofday(&endTime, 0);
     
     totalTime = (1000000.0*(endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec))/1000.0; // milliseconds
-    avgTime = totalTime / g_current_step; 
+    avgTime = totalTime / (g_current_step - startStep); 
     std::cout << "Total time: " << totalTime << " ms" << std::endl;
     std::cout << "Avg. frame time: " << avgTime << " ms "
               << "(" << 1000.0f/avgTime << ") fps" << std::endl;
@@ -266,7 +267,9 @@ int main(int args, char **argv)
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
     std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
 
-    gettimeofday(&startTime, 0);
+    if (!g_rendering_enabled)
+        gettimeofday(&startTime, 0);
+    startStep = 0;
 
     if (g_rendering_enabled)
         g_viewer->mainLoop();
@@ -401,6 +404,10 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods) {
     }
     else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
         g_paused = !g_paused;
+        if (!g_paused) {
+            gettimeofday(&startTime, 0);
+            startStep = g_current_step;
+        }
     }
 }
 
