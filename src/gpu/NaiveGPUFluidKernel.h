@@ -22,6 +22,12 @@ extern "C" {
     void naive_cleanUp(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
                         scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd);
 
+    void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, scalar fp_mass,
+                      int num_particles,
+                      FluidBoundingBox* h_boundingbox,
+                      scalar h,
+                      Vector3s accumForce,
+                      scalar dt);
    /*
   void naive_initGPUFluid(int **g_neighbors, int **g_gridIndex,
                          int **g_grid,

@@ -40,32 +40,15 @@ __host__ void naive_getGridSize(FluidBoundingBox* fbox, scalar h,
 __device__ Vector3s naive_getFluidVolumePosition(FluidVolume& volume, int k);
 
 
-
-
- 
+ // GPU functions
 __global__ void naive_initializePositions(Vector3s *d_pos, FluidVolume* g_volumes,
-                                     int num_particles, int num_volumes) {
+                                     int num_particles, int num_volumes);
 
-    int gid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (gid >= num_particles)
-        return;
+__global__ void naive_kupdateVBO(float *vbo, Vector3s *d_pos, int num_particles);
+ 
+__global__ void naive_updateFromForce(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, scalar fp_mass, scalar dt, Vector3s force, int num_particles);
 
-    int volume_index = -1;
-    int offset = 0;
-    int volume_size = 0;
-    do {
-        volume_index++;
-        offset += volume_size;
-        volume_size = g_volumes[volume_index].m_numParticles;
-    } while (offset + volume_size < gid);
-
-    FluidVolume& volume = g_volumes[volume_index];
-
-    d_pos[gid] = naive_getFluidVolumePosition(volume, gid-offset);
-}
-
-
-
+__global__ void naive_updateValForReals(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, scalar dt, int num_particles);  
 
 void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
                         scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, 
@@ -144,19 +127,61 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     std::cout << "Done fluid init on gpu" << std::endl;
 }
 
-void naive_stepFluid(
+void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, scalar fp_mass,
                       int num_particles,
                       FluidBoundingBox* h_boundingbox,
                       scalar h,
                       Vector3s accumForce,
                       scalar dt) {
 
+    if(!naive_deviceHappy)
+        return;
+    
+    //int gridSizeX, gridSizeY, gridSizeZ;
+    //naive_getGridSize(h_boundingBox, h, gridSizeX, gridSizeY, gridSizeZ);
+    //int grid_size = gridSizeX * gridSizeY * gridSizeZ;
 
+    // update predicted values from forces
+    int gridSize = ceil(num_particles / (1.0 * naive_BLOCKSIZE_1D)); 
+ 
+    naive_updateFromForce<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_ppos, fp_mass, dt, accumForce, num_particles); 
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
+/*    
+    GPU_CHECKERROR(cudaMemset((void *)d_dpos, 0, num_particles * sizeof(Vector3s)));
+    preserveBoundary(true);
+
+    buildGrid();
+
+    for(int loop = 0; loop < iters; ++loop){
+        calculatePressures();
+        calculateLambdas();
+        calculatedPos();
+        
+        applydPToPredPos();
+    }
+*/
+    
+    naive_updateValForReals<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_ppos, dt, num_particles); 
+    GPU_CHECKERROR(cudaGetLastError());
+    GPU_CHECKERROR(cudaThreadSynchronize());
+
+    //adjustVel(dt);
 }
 
 void naive_updateVBO(float *vboptr, Vector3s *d_pos, int num_particles){
-    
-
+    int gridSize = ceil(num_particles / (naive_BLOCKSIZE_1D*1.0));
+    naive_kupdateVBO <<< gridSize, naive_BLOCKSIZE_1D>>> (vboptr, d_pos, num_particles);
+    cudaError_t err= cudaGetLastError();
+    if(err != cudaSuccess){
+        naive_deviceHappy = false;
+        fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString(err), __FILE__, __LINE__);
+        return; 
+    }
+    else{
+        naive_deviceHappy = true;
+    }
+    GPU_CHECKERROR(cudaDeviceSynchronize());
 
     
 
@@ -233,7 +258,55 @@ __device__ Vector3s naive_getFluidVolumePosition(FluidVolume& volume, int k) {
     return Vector3s(0, 0, 0);
 }
 
+ 
+__global__ void naive_initializePositions(Vector3s *d_pos, FluidVolume* g_volumes,
+                                     int num_particles, int num_volumes) {
 
+    int gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= num_particles)
+        return;
+
+    int volume_index = -1;
+    int offset = 0;
+    int volume_size = 0;
+    do {
+        volume_index++;
+        offset += volume_size;
+        volume_size = g_volumes[volume_index].m_numParticles;
+    } while (offset + volume_size < gid);
+
+    FluidVolume& volume = g_volumes[volume_index];
+
+    d_pos[gid] = naive_getFluidVolumePosition(volume, gid-offset);
+}
+
+__global__ void naive_kupdateVBO(float *vbo, Vector3s *d_pos, int num_particles){
+    int id = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(id < num_particles){
+        vbo[id*4+0] = d_pos[id][0];
+        vbo[id*4+1] = d_pos[id][1];
+        vbo[id*4+2] = d_pos[id][2];
+        vbo[id*4+3] = 1.0f;
+    }
+}
+
+__global__ void naive_updateFromForce(Vector3s* d_pos, Vector3s* d_vel, Vector3s* d_ppos, scalar fp_mass, scalar dt, Vector3s force, int num_particles){
+    int id = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(id < num_particles){
+        d_vel[id] += force * dt / fp_mass;
+        //d_vel[id] += force * dt;
+        d_ppos[id] = d_pos[id] + d_vel[id]*dt; 
+    }
+}
+
+
+__global__ void naive_updateValForReals(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, scalar dt, int num_particles){  
+    int id = (blockIdx.x * blockDim.x) + threadIdx.x;
+    if(id < num_particles){
+        d_vel[id] = (d_ppos[id] - d_pos[id])/dt;
+        d_pos[id] = d_ppos[id];
+    }
+}
 
 
 #endif

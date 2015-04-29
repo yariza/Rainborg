@@ -12,7 +12,7 @@ class Scene;
 class NaiveGPUFluid : public Fluid {
 
 public:
-    NaiveGPUFluid(scalar mass, scalar p0, scalar h, int iters, int maxNeigh = 20, int minNeighbor = 3);
+    NaiveGPUFluid(scalar mass, scalar p0, scalar h, int iters=2, int maxNeigh = 20, int minNeighbor = 3);
     NaiveGPUFluid(NaiveGPUFluid& otherFluid);
     virtual ~NaiveGPUFluid();
 
@@ -32,8 +32,6 @@ private:
     int *d_grid;
     int *d_gridCount;
     int *d_gridInd;   
-
-
 
 
 };
