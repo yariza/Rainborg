@@ -33,7 +33,7 @@ public:
     //scalar* getFPVel() const;
     virtual Vector3s* getFPPos() const;
     virtual Vector3s* getFPVel() const; 
-    virtual Vector4s* getColors() const;
+//    virtual Vector4s* getColors() const;
 
 private: 
 
@@ -89,7 +89,7 @@ private:
 
 
     // Colors? 
-    Vector4s *m_colors;     
+    //Vector4s *m_colors;     
 
  
 };

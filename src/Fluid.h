@@ -38,6 +38,8 @@ public:
     virtual const std::vector<FluidVolume>& getFluidVolumes() const;
 
     virtual void updateVBO(float* dptr) = 0;
+    virtual Vector4s* getColors() const;
+
 
 protected:
 
@@ -50,6 +52,8 @@ protected:
 
     std::vector<FluidVolume> m_volumes;
     FluidBoundingBox* m_boundingBox; 
+    Vector4s *m_colors;     
+
 
 };
 

@@ -176,11 +176,11 @@ Vector3s* SerialFluid::getFPPos() const{
 Vector3s* SerialFluid::getFPVel() const{
     return m_vel;
 }
-
+/*
 Vector4s* SerialFluid::getColors() const{
     return m_colors; 
 }
-
+*/
 void SerialFluid::loadFluidVolumes() {
 
     int numParticles = getNumParticles();

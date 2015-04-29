@@ -91,3 +91,9 @@ void Fluid::setBoundingBox(FluidBoundingBox* bound){
 const FluidBoundingBox* Fluid::getBoundingBox() const{
     return m_boundingBox;
 }
+
+Vector4s* Fluid::getColors() const{
+    return m_colors; 
+}
+
+

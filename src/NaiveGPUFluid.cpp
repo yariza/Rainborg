@@ -23,6 +23,7 @@ NaiveGPUFluid::~NaiveGPUFluid() {
     // clean up
     naive_cleanUp(&d_pos, &d_vel, &d_ppos, &d_dpos, &d_omega, 
                         &d_pcalc, &d_lambda, &d_grid, &d_gridCount, &d_gridInd); 
+    free(m_colors);
 }
 
 void NaiveGPUFluid::stepSystem(Scene& scene, scalar dt) {
@@ -65,10 +66,19 @@ void NaiveGPUFluid::stepSystem(Scene& scene, scalar dt) {
 
 void NaiveGPUFluid::loadFluidVolumes() {
 
-  FluidVolume h_volumes[m_volumes.size()];
-  for (int i=0; i<m_volumes.size(); i++) {
-    h_volumes[i] = m_volumes[i];
-  }
+    FluidVolume h_volumes[m_volumes.size()];
+    for (int i=0; i<m_volumes.size(); i++) {
+        h_volumes[i] = m_volumes[i];
+    }
+
+    m_colors = (Vector4s *)malloc(getNumParticles() * sizeof(Vector4s)); 
+    int offset = 0; 
+    for (std::vector<FluidVolume>::size_type i=0; i<m_volumes.size(); i++) {
+        FluidVolume& volume = m_volumes[i];
+        volume.setParticleColors(m_colors, offset);
+        offset += volume.m_numParticles;
+    }
+
 
  naive_initGPUFluid(&d_pos, &d_vel, &d_ppos, &d_dpos, &d_omega, 
                         &d_pcalc, &d_lambda, &d_grid, &d_gridCount, &d_gridInd, m_maxNeighbors,

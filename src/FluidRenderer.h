@@ -20,6 +20,7 @@ private:
     //gpu stuff
     GLuint vbo;
     GLuint ibo;
+    GLuint cbo; // colors
 
     GLfloat *vertices;
     GLuint *indices;
