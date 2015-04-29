@@ -232,7 +232,7 @@ void loadScene( const std::string& file_name) {
          //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
         fluid->setBoundingBox(fbox);
 
-        FluidVolume volume(0, 9, 0, 9, 0, 9, 3000, kFLUID_VOLUME_MODE_BOX, true);
+        FluidVolume volume(0, 9, 0, 9, 0, 9, 20000, kFLUID_VOLUME_MODE_BOX, true);
         fluid->insertFluidVolume(volume);
 
         scene->insertFluid(fluid);

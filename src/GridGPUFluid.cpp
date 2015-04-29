@@ -45,6 +45,7 @@ void GridGPUFluid::stepSystem(Scene& scene, scalar dt) {
                  &d_particles,
                  getNumParticles(),
                  m_boundingBox,
+                 m_iters,
                  m_h, m_p0,
                  accumForce,
                  dt);
