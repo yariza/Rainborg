@@ -211,9 +211,9 @@ void loadScene( const std::string& file_name) {
         Fluid *fluid;
         if (g_gpu_mode){
             #ifdef GPU_ENABLED
-            //fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
+            fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
             //fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
-            fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
+            //fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
             #endif
         }
         else
@@ -294,13 +294,14 @@ int main(int args, char **argv)
         initializeOpenGLandGLFW();
 
     #ifdef GPU_ENABLED
-    if(g_gpu_mode){
+    if(g_gpu_mode && g_rendering_enabled){
         GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
         std::cout << "set device" << std::endl;
     }
     #endif
 
-    g_simulation->prepareForRender();
+    if(g_rendering_enabled)
+        g_simulation->prepareForRender();
  
     std::cout << outputmod::startblue << "Scene: " << outputmod::endblue << g_xml_scene_file << std::endl;
     std::cout << outputmod::startblue << "Description: " << outputmod::endblue << g_description << std::endl;
