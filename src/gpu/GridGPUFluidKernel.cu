@@ -9,6 +9,7 @@
 #include <thrust/execution_policy.h>
 
 #define GRID_ART_PRESSURE 1
+#define GRID_VORTICITY 0
 
 const int kgrid_BLOCKSIZE_1D = 512;
 const int kgrid_BLOCKSIZE_REDUCED = 256;
@@ -18,10 +19,15 @@ const int kgrid_MAX_CELL_SIZE = 20;
 const scalar kgrid_EPS = 0.001;
 
 const scalar kgrid_RELAXATION = 0.01;
+
 // artificial pressure constants
 const scalar kgrid_DELTA_Q_SCALE = 0.1;
 const scalar kgrid_ART_PRESSURE_K = 0.1;
 const scalar kgrid_ART_PRESSURE_N = 6;
+
+// XSPH constants
+const scalar kgrid_XSPH_C = 0.01;
+const scalar kgrid_VORTICITY_EPS = 0.01;
 
 bool grid_deviceHappy = true;
 
@@ -132,13 +138,23 @@ __global__ void kgrid_preserveFluidBoundary(grid_gpu_block_t *g_particles,
 __global__ void kgrid_updatePPos(grid_gpu_block_t *g_particles,
                                  int num_particles);
 
-// TODO
-
 
 // update velocity
 __global__ void kgrid_updateVelocity(grid_gpu_block_t *g_particles,
                                      int num_particles,
                                      scalar dt);
+
+// apply xsph and viscosity
+__global__ void kgrid_applyXSPHAndOmega(grid_gpu_block_t *g_particles,
+                                        int num_particles,
+                                        int *g_neighbors,
+                                        scalar h);
+
+// apply vorticity
+__global__ void kgrid_applyVorticity(grid_gpu_block_t *g_particles,
+                                     int num_particles,
+                                     int *g_neighbors,
+                                     scalar h);
 
 // update position
 __global__ void kgrid_updatePosition(grid_gpu_block_t *g_particles,
@@ -257,6 +273,7 @@ __global__ void kgrid_initializePositions(grid_gpu_block_t *g_particles, FluidVo
 
     g_particles[gid].pos = kgrid_getFluidVolumePosition(volume, gid - offset);
     g_particles[gid].vec1 = Vector3s(0, 0, 0); // velocity
+    g_particles[gid].vec3 = Vector3s(0,0,0); //ext-force
 }
 
 /// Update VBO
@@ -326,7 +343,6 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
     kgrid_applyForces <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
                       >>> (*g_particles, num_particles, accumForce, mass, dt);
     GPU_CHECKERROR(cudaGetLastError());
-    GPU_CHECKERROR(cudaDeviceSynchronize());
 
     // step 2: find k nearest neighbors
     hgrid_findKNearestNeighbors(g_neighbors, g_gridIndex,
@@ -372,7 +388,19 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
     GPU_CHECKERROR(cudaGetLastError());
 
 
-    //TODO
+    // step 8a: apply XSPH and set omega
+    kgrid_applyXSPHAndOmega <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                            >>> (*g_particles, num_particles,
+                                 *g_neighbors, h);
+    GPU_CHECKERROR(cudaGetLastError());
+
+
+    // step 8b: apply vorticity
+    kgrid_applyVorticity <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
+                         >>> (*g_particles, num_particles,
+                              *g_neighbors, h);
+    GPU_CHECKERROR(cudaGetLastError());
+
 
     // step 9: update position
     kgrid_updatePosition <<< blocksPerParticles, kgrid_BLOCKSIZE_1D
@@ -418,7 +446,6 @@ __host__ void hgrid_findKNearestNeighbors(int **g_neighbors, int **g_gridIndex,
                        >>> (*g_gridIndex, num_particles, *g_grid, grid_size);
     GPU_CHECKERROR(cudaGetLastError());
 
-    GPU_CHECKERROR(cudaDeviceSynchronize());
 
     // step 2f: find k nearest neighbors
 
@@ -441,7 +468,8 @@ __global__ void kgrid_applyForces(grid_gpu_block_t *g_particles,
     if (id < num_particles) {
         Vector3s pos = g_particles[id].pos;
         Vector3s vel = g_particles[id].vec1;
-        vel += dt * accumForce / mass;
+        Vector3s ext_force = g_particles[id].vec3;
+        vel += dt * (accumForce + ext_force) / mass;
         Vector3s ppos = pos + dt * vel;
         g_particles[id].vec1 = vel; //velocity
         g_particles[id].vec2 = ppos; // predicted pos
@@ -692,7 +720,7 @@ __global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
         press += kgrid_Poly6Kernel(ppos, other_ppos, h);
     }
     press *= mass;
-    if (neighbor_count <= 2) {
+    if (neighbor_count == 0) {
         press = p0;
     }
 
@@ -772,6 +800,9 @@ __global__ void kgrid_preserveFluidBoundary(grid_gpu_block_t *g_particles,
     if (particle_id >= num_particles)
         return;
 
+    // needless hack to randomize epsilon
+    scalar shift = (particle_id%124) * 1.0 / 10000.0;
+
     grid_gpu_block_t my_particle = g_particles[particle_id];
     Vector3s ppos = my_particle.vec2;
     Vector3s dpos = my_particle.vec3;
@@ -781,17 +812,17 @@ __global__ void kgrid_preserveFluidBoundary(grid_gpu_block_t *g_particles,
     scalar posZ = pos.z;
 
     if (posX < c_minX)
-        posX = c_minX + kgrid_EPS;
+        posX = c_minX + kgrid_EPS + shift;
     else if (posX > c_maxX)
-        posX = c_maxX - kgrid_EPS;
+        posX = c_maxX - kgrid_EPS - shift;
     if (posY < c_minY)
-        posY = c_minY + kgrid_EPS;
+        posY = c_minY + kgrid_EPS + shift;
     else if (posY > c_maxY)
-        posY = c_maxY - kgrid_EPS;
+        posY = c_maxY - kgrid_EPS - shift;
     if (posZ < c_minZ)
-        posZ = c_minZ + kgrid_EPS;
+        posZ = c_minZ + kgrid_EPS + shift;
     else if (posZ > c_maxZ)
-        posZ = c_maxZ - kgrid_EPS;
+        posZ = c_maxZ - kgrid_EPS - shift;
 
     g_particles[particle_id].vec3 = Vector3s(posX, posY, posZ) - ppos;
 }
@@ -813,9 +844,6 @@ __global__ void kgrid_updatePPos(grid_gpu_block_t *g_particles,
 }
 
 
-/// TODO
-
-
 /// update velocity
 
 __global__ void kgrid_updateVelocity(grid_gpu_block_t *g_particles,
@@ -830,6 +858,99 @@ __global__ void kgrid_updateVelocity(grid_gpu_block_t *g_particles,
     }
 }
 
+// apply xsph and viscosity
+// (vec2 = ppos, vec1 = vel) --> (pos = vel, vec3 = omega)
+__global__ void kgrid_applyXSPHAndOmega(grid_gpu_block_t *g_particles,
+                                        int num_particles,
+                                        int *g_neighbors,
+                                        scalar h) {
+    int particle_id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (particle_id >= num_particles)
+        return;
+
+    grid_gpu_block_t my_particle = g_particles[particle_id];
+    Vector3s vel = my_particle.vec1;
+    Vector3s ppos = my_particle.vec2;
+
+    Vector3s dv(0,0,0);
+#if GRID_VORTICITY == 1
+    Vector3s omega(0,0,0);
+#endif
+    int *g_my_neighbors = g_neighbors + (kgrid_NUM_NEIGHBORS * particle_id);
+
+    for (int i=0; i<kgrid_NUM_NEIGHBORS; i++) {
+        int neighbor_id = g_my_neighbors[i];
+        if (neighbor_id == -1)
+            break;
+
+        grid_gpu_block_t other_particle = g_particles[neighbor_id];
+        Vector3s other_vel = other_particle.vec1;
+        Vector3s other_ppos = other_particle.vec2;
+        Vector3s vij = other_vel - vel;
+
+        dv += vij * kgrid_Poly6Kernel(ppos, other_ppos, h);
+#if GRID_VORTICITY == 1
+        omega += glm::cross(vij, kgrid_SpikyKernelGrad(ppos, other_ppos, h));
+#endif
+    }
+
+    dv *= kgrid_XSPH_C;
+    vel += dv;
+    g_particles[particle_id].pos = vel;
+
+#if GRID_VORTICITY == 1
+    g_particles[particle_id].vec3 = omega;
+#endif
+}
+
+// apply vorticity
+// (pos = vel, vec2 = ppos, vec3 = omega) -> (vec1 = vel, vec3 = ext force?)
+__global__ void kgrid_applyVorticity(grid_gpu_block_t *g_particles,
+                                     int num_particles,
+                                     int *g_neighbors,
+                                     scalar h) {
+    int particle_id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (particle_id >= num_particles)
+        return;
+
+    grid_gpu_block_t my_particle = g_particles[particle_id];
+    Vector3s ppos = my_particle.vec2;
+    Vector3s vel = my_particle.pos;
+    Vector3s omega = my_particle.vec3;
+
+    Vector3s vort(0,0,0);
+    Vector3s grad(0,0,0);
+
+    int *g_my_neighbors = g_neighbors + (kgrid_NUM_NEIGHBORS * particle_id);
+
+    for (int i=0; i<kgrid_NUM_NEIGHBORS; i++) {
+        int neighbor_id = g_my_neighbors[i];
+        if (neighbor_id == -1)
+            break;
+
+        grid_gpu_block_t other_particle = g_particles[neighbor_id];
+        Vector3s other_ppos = other_particle.vec2;
+        Vector3s other_vel = other_particle.pos;
+        Vector3s other_omega = other_particle.vec3;
+
+        scalar dom = glm::length(omega - other_omega);
+        Vector3s dp = other_ppos - ppos;
+        vort.x += dom / (dp.x+0.001);
+        vort.y += dom / (dp.y+0.001);
+        vort.z += dom / (dp.z+0.001);
+    }
+
+    vort /= (glm::length(vort) + kgrid_EPS);
+
+    g_particles[particle_id].vec1 = vel;
+
+#if GRID_VORTICITY == 1
+    Vector3s ext_force = 1.0f * kgrid_VORTICITY_EPS * glm::cross(vort, omega);
+    g_particles[particle_id].vec3 = ext_force;
+#else
+    g_particles[particle_id].vec3 = Vector3s(0,0,0);
+#endif
+}
 
 /// update position
 

@@ -204,7 +204,7 @@ void loadScene( const std::string& file_name) {
         FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(0, -10.0, 0);
         scene->insertFluidForce(sgf);
 
-        FluidBoundingBox* fbox = new FluidBoundingBox(-5, 10, -5, 10, -5, 10);
+        FluidBoundingBox* fbox = new FluidBoundingBox(-15, 10, -5, 15, -10, 10);
 
         Fluid *fluid;
         if (g_gpu_mode){
@@ -232,7 +232,7 @@ void loadScene( const std::string& file_name) {
          //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
         fluid->setBoundingBox(fbox);
 
-        FluidVolume volume(0, 9, 0, 9, 0, 9, 20000, kFLUID_VOLUME_MODE_BOX, true);
+        FluidVolume volume(0, 9, 0, 9, 0, 9, 30000, kFLUID_VOLUME_MODE_BOX, true);
         fluid->insertFluidVolume(volume);
 
         scene->insertFluid(fluid);
@@ -250,7 +250,7 @@ void loadScene( const std::string& file_name) {
 
         g_simulation = new Simulation(scene, stepper, renderer);
         g_dt = 0.01;
-        max_time = 100.0;
+        max_time = 20.0;
     //END PLACEHOLDER
 
     g_simulation->load();
@@ -322,7 +322,11 @@ void stepSystem() {
     else{
         g_simulation->stepSystem(g_dt);
     }
-    std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen << (g_current_step*g_dt) << std::endl;
+
+    if (g_rendering_enabled) {
+        std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen
+                  << (g_current_step*g_dt) << std::endl;
+    }
     g_current_step++;
 
     #ifdef PNGOUT
