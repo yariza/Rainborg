@@ -10,9 +10,9 @@
 #define naive_EPS .01
 #define naive_VORTICITY 0
 #define naive_VORT_EPS .0001
-#define naive_XSPH 0
+#define naive_XSPH 1
 #define naive_C .0001
-#define naive_ART_PRESSURE 0
+#define naive_ART_PRESSURE 1
 #define naive_N 4
 #define naive_DQ .3
 #define naive_K .1

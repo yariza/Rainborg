@@ -20,6 +20,7 @@ __constant__ scalar c_maxY;
 __constant__ scalar c_minZ;
 __constant__ scalar c_maxZ;
 __constant__ scalar c_eps;    
+__constant__ scalar c_qscale;
 __constant__ int c_gridSizeX;
 __constant__ int c_gridSizeY;
 __constant__ int c_gridSizeZ;
@@ -57,7 +58,7 @@ __global__ void naive_updateFromForce(Vector3s *d_pos, Vector3s *d_vel, Vector3s
 
 __global__ void naive_updateValForReals(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, scalar dt, int num_particles);  
 
-__global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar h, int num_particles, int max_neigh);
+__global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_dpos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar h, int num_particles, int max_neigh);
 
 __global__ void applyVorticity(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar dt, scalar fp_mass, int num_particles, int max_neigh);
 
@@ -168,6 +169,12 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     GPU_CHECKERROR(cudaMemcpyToSymbol(c_h, &h,
                                       sizeof(scalar)));
 
+    Vector3s dq(h, 0, 0);
+    dq *= (scalar) naive_DQ;
+    scalar q_scale = naive_wPoly6Kernel(Vector3s(0, 0, 0), dq, h);
+    GPU_CHECKERROR(cudaMemcpyToSymbol(c_qscale, &q_scale, sizeof(scalar))); 
+
+
 
     GPU_CHECKERROR(cudaMalloc((void **)d_grid, gridSizeX * gridSizeY * gridSizeZ * max_neigh * sizeof(int)));
     GPU_CHECKERROR(cudaMalloc((void **)d_gridCount, gridSizeX * gridSizeY * gridSizeZ *sizeof(int)));
@@ -265,11 +272,13 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
     return;
     #endif
 
-    updateXSPHAndOmega<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, h, num_particles, max_neigh);
+    updateXSPHAndOmega<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_dpos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, h, num_particles, max_neigh);
 
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
     
+    GPU_CHECKERROR(cudaMemcpy(d_vel, d_dpos, num_particles * sizeof(Vector3s), cudaMemcpyDeviceToDevice));
+
     #if naive_VORTICITY == 0
     return;
     #endif
@@ -425,7 +434,7 @@ __global__ void naive_updateValForReals(Vector3s *d_pos, Vector3s *d_vel, Vector
     }
 }
 
-__global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar h, int num_particles, int max_neigh){
+__global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_dpos, Vector3s *d_vel, Vector3s *d_omega, int *d_grid, int *d_gridCount, int *d_gridInd, scalar h, int num_particles, int max_neigh){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(p >= num_particles)
         return;
@@ -462,7 +471,8 @@ __global__ void updateXSPHAndOmega(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d
     }
 
     dv *= naive_C;
-    d_vel[p] += dv; 
+    //d_vel[p] += dv; 
+    d_dpos[p] = d_vel[p] + dv; // store value in d_ppos
     #if naive_VORTICITY > 0
     d_omega[p] = omega;
     #endif
@@ -697,7 +707,7 @@ __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d
     
                 #if naive_ART_PRESSURE > 0
                     scalar top = naive_wPoly6Kernel(pi, pj, h); 
-                    scorr = - naive_K * (pow(top / naive_QSCALE, naive_N)); 
+                    scorr = - naive_K * (pow(top / c_qscale, naive_N)); 
                 #endif
 
                     dp += (plambda + d_lambda[q] + scorr) * naive_wSpikyKernelGrad(pi, pj, h);
