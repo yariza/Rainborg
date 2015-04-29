@@ -13,6 +13,8 @@ const int kgrid_BLOCKSIZE_REDUCED = 256;
 const int kgrid_NUM_NEIGHBORS = 5;
 const int kgrid_MAX_CELL_SIZE = 20;
 
+const scalar kgrid_RELAXATION = 0.01;
+
 bool grid_deviceHappy = true;
 
 // fluid characteristics
@@ -35,6 +37,16 @@ __constant__ int c_gridSizeZ;
 ///////////////////////////////////////////////
 /// Function Headers
 ///////////////////////////////////////////////
+
+// kernel functions
+__device__ scalar kgrid_Poly6Kernel(Vector3s &pi, Vector3s &pj, scalar h);
+__device__ Vector3s kgrid_SpikyKernelGrad(Vector3s &pi, Vector3s &pj, scalar h);
+
+// gradient functions
+__device__ Vector3s kgrid_calcGradConstraint(Vector3s& pi, Vector3s& pj, scalar p0, scalar h);
+__device__ Vector3s kgrid_calcGradConstraintAtI(Vector3s &pi,
+                                                Vector3s* neighbor_ppos, int neighbor_count,
+                                                scalar p0, scalar h);
 
 // helper functions for getting grid indices
 __device__ void kgrid_getGridLocation(Vector3s pos, int &i, int &j, int &k);
@@ -89,14 +101,12 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
                                             int num_cells,
                                             scalar h);
 
-// calculate pressure
-__global__ void kgrid_calculatePressure(grid_gpu_block_t *g_particles,
-                                        int num_particles,
-                                        int *g_neighbors,
-                                        int *g_gridIndex,
-                                        int *g_grid,
-                                        int num_cells,
-                                        scalar h);
+// calculate lambda
+__global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
+                                      int num_particles,
+                                      int *g_neighbors,
+                                      scalar h,
+                                      scalar p0);
 // TODO
 
 
@@ -272,6 +282,7 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                     int num_particles,
                     FluidBoundingBox* h_boundingBox,
                     scalar h,
+                    scalar p0,
                     Vector3s accumForce,
                     scalar dt) {
 
@@ -298,10 +309,14 @@ void grid_stepFluid(int **g_neighbors, int **g_gridIndex,
                                 h,
                                 grid_size);
 
-    // step 3a: calculate pressure
-    
+    // step 3: calculate lambda
+    size_t lambda_shared_bytes = sizeof(scalar) * kgrid_NUM_NEIGHBORS * kgrid_BLOCKSIZE_1D;
+    kgrid_calculateLambda <<< blocksPerParticles, kgrid_BLOCKSIZE_1D, lambda_shared_bytes
+                          >>> (*g_particles, num_particles,
+                               *g_neighbors, h, p0);
+    GPU_CHECKERROR(cudaGetLastError());
 
-    // step 3b: calculate lambda
+    // step 4: calculate dpos
     
 
     // TODO
@@ -536,20 +551,70 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
     }
 }
 
-/// calculate pressure - by grid cell
-__global__ void kgrid_calculatePressure(grid_gpu_block_t *g_particles,
-                                        int num_particles,
-                                        int *g_neighbors,
-                                        int *g_gridIndex,
-                                        int *g_grid,
-                                        int num_cells,
-                                        scalar h) {
-    int cell_id = blockIdx.x * blockDim.x + threadIdx.x;
-    if (cell_id >= num_cells)
+/// calculate lambda - by particle
+/// input (vec2 = ppos) --> (sca1 = lambda)
+__global__ void kgrid_calculateLambda(grid_gpu_block_t *g_particles,
+                                      int num_particles,
+                                      int *g_neighbors,
+                                      scalar h,
+                                      scalar p0) {
+    extern __shared__ Vector3s s_neighbor_ppos[];
+
+    int particle_id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (particle_id >= num_particles)
         return;
 
-    
+    // copy over global memory to shared block
+    // also keep track of actual neighbor count
+    int neighbor_count;
+    int *g_my_neighbors = g_neighbors + (kgrid_NUM_NEIGHBORS * particle_id);
+    Vector3s *s_my_neighbor_ppos = s_neighbor_ppos + (kgrid_NUM_NEIGHBORS * threadIdx.x);
+
+    //copy over data from global memory to shared memory
+    for (neighbor_count=0; neighbor_count<kgrid_NUM_NEIGHBORS; neighbor_count++) {
+        int neighbor_id = g_my_neighbors[neighbor_count];
+        if (neighbor_id == -1)
+            break;
+
+        // copy over vec2 attribute (ppos)
+        s_my_neighbor_ppos[neighbor_count] = g_particles[neighbor_id].vec2;
+    }
+
+    // get our own ppos
+    Vector3s ppos = g_particles[particle_id].vec2;
+
+    scalar press = 0;
+    // iterate over neighbor array
+
+    for (int i=0; i<neighbor_count; i++) {
+        Vector3s &other_ppos = s_my_neighbor_ppos[i];
+        press += kgrid_Poly6Kernel(ppos, other_ppos, h);
+    }
+
+    scalar top = (press / p0) - 1.0;
+
+    // accumulate Ci gradients
+    scalar gradSum = 0;
+    scalar gradL;
+    for (int i=0; i<neighbor_count; i++) {
+        Vector3s &other_ppos = s_my_neighbor_ppos[i];
+        gradL = glm::length(kgrid_calcGradConstraint(ppos, other_ppos, p0, h));
+        gradSum = gradL*gradL;
+    }
+    //add self
+    gradL = glm::length(kgrid_calcGradConstraintAtI(ppos,
+                                                    s_my_neighbor_ppos,
+                                                    neighbor_count,
+                                                    p0, h));
+    gradSum += gradL*gradL;
+    gradSum += kgrid_RELAXATION;
+
+    scalar lambda = -1.0f * top / gradSum;
+    g_particles[particle_id].sca1 = lambda;
 }
+
+// Calculate dpos
+
 
 
 /// TODO
@@ -637,6 +702,47 @@ __device__ Vector3s kgrid_getFluidVolumePosition(FluidVolume& volume, int k) {
     }
     // sphere mode not supported
     return Vector3s(0, 0, 0);
+}
+
+///kernel functions
+
+__device__ scalar kgrid_Poly6Kernel(Vector3s& pi, Vector3s& pj, scalar H){
+    scalar r = glm::distance(pi, pj);
+    if(r > H || r < 0)
+        return 0;
+
+    r = ((H * H) - (r * r));
+    r = r * r * r; // (h^2 - r^2)^3
+    return r * (315.0 / (64.0 * PI * H * H * H * H * H * H * H * H * H));
+
+}
+
+__device__ Vector3s kgrid_SpikyKernelGrad(Vector3s& pi, Vector3s& pj, scalar H){
+    Vector3s dp = pi - pj;
+    scalar r = glm::length(dp);
+    if(r > H || r < 0)
+        return Vector3s(0.0, 0.0, 0.0);
+    scalar scale = 45.0 / (PI * H * H * H * H * H * H) * (H - r) * (H - r);
+    return scale / (r + 0.001f) * dp;
+}
+
+// gradient functions
+
+__device__ Vector3s kgrid_calcGradConstraint(Vector3s& pi, Vector3s& pj, scalar p0, scalar h){
+    return -1.0f * kgrid_SpikyKernelGrad(pi, pj, h) / p0;
+}
+
+__device__ Vector3s kgrid_calcGradConstraintAtI(Vector3s &pi,
+                                                Vector3s* neighbor_ppos, int neighbor_count,
+                                                scalar p0, scalar h) {
+    Vector3s sumGrad(0.0, 0.0, 0.0);
+
+    for (int i=0; i<neighbor_count; i++) {
+        Vector3s other_ppos = neighbor_ppos[i];
+        sumGrad += kgrid_SpikyKernelGrad(pi, other_ppos, h);
+    }
+
+    return sumGrad / p0;
 }
 
 

@@ -30,7 +30,7 @@ private:
 
     // grid neighbors
     // stores neighbor particle ids.
-    // dimension num_particles*max_neighbors
+    // dimension num_particles*num_neighbors
     int *d_neighbors;
 
     // grid index: per particle

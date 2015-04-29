@@ -29,6 +29,7 @@ extern "C" {
                       int num_particles,
                       FluidBoundingBox* h_boundingbox,
                       scalar h,
+                      scalar p0,
                       Vector3s accumForce,
                       scalar dt);
 
