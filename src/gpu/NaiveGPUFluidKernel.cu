@@ -409,10 +409,14 @@ __global__ void naive_initializePositions(Vector3s *d_pos, FluidVolume* g_volume
 __global__ void naive_kupdateVBO(float *vbo, Vector3s *d_pos, int num_particles){
     int id = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(id < num_particles){
-        vbo[id*4+0] = d_pos[id][0];
-        vbo[id*4+1] = d_pos[id][1];
-        vbo[id*4+2] = d_pos[id][2];
-        vbo[id*4+3] = 1.0f;
+        vbo[id*8+0] = d_pos[id][0];
+        vbo[id*8+1] = d_pos[id][1];
+        vbo[id*8+2] = d_pos[id][2];
+        vbo[id*8+3] = 1.0f;
+        vbo[id*8+4] = 1.0f;
+        vbo[id*8+5] = 0.0f;
+        vbo[id*8+6] = 0.0f;
+        vbo[id*8+7] = .6f;
     }
 }
 

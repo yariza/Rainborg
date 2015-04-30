@@ -26,6 +26,7 @@ private:
     GLuint *indices;
 
     GLuint position_location;
+    GLuint color_location;
 };
 
 #endif

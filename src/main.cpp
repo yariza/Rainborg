@@ -373,7 +373,7 @@ void initializeOpenGLandGLFW() {
     g_viewer->bindDisplayCallback(display);
     g_viewer->bindIdleCallback(idle);
 
-    g_viewer->setScenePosition(openglframework::Vector3(0.0, 0.0, 0.0), 10);   
+    g_viewer->setScenePosition(openglframework::Vector3(5.0, 5.0, 0.0), 20);   
     // Define the background color (black)
     glClearColor(g_bgcolor.r, g_bgcolor.g, g_bgcolor.b, 1.0);
 }
