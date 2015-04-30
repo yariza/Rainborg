@@ -274,6 +274,14 @@ __global__ void kgrid_initializePositions(grid_gpu_block_t *g_particles, FluidVo
     g_particles[gid].pos = kgrid_getFluidVolumePosition(volume, gid - offset);
     g_particles[gid].vec1 = Vector3s(0, 0, 0); // velocity
     g_particles[gid].vec3 = Vector3s(0,0,0); //ext-force
+
+    // load colors
+    g_particles[gid].r = volume.m_color.r * 255.0f;
+    g_particles[gid].g = volume.m_color.g * 255.0f;
+    g_particles[gid].b = volume.m_color.b * 255.0f;
+    g_particles[gid].a = volume.m_color.a * 255.0f;
+
+    g_particles[gid].num_neighbors = 0;
 }
 
 /// Update VBO
@@ -306,13 +314,19 @@ __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int n
     int gid = blockIdx.x * blockDim.x + threadIdx.x;
     if (gid < num_particles) {
     //if(gid < 10){
-        vbo[gid*4+0] = g_particles[gid].pos.x;
-        vbo[gid*4+1] = g_particles[gid].pos.y;
-        vbo[gid*4+2] = g_particles[gid].pos.z;
-        //vbo[gid*4+0] = 5.0f;
-        //vbo[gid*4+1] = 5.0f;
-        //vbo[gid*4+2] = 5.0f;
-        vbo[gid*4+3] = 1.0f;
+        grid_gpu_block_t my_particle = g_particles[gid];
+        vbo[gid*4+0] = my_particle.pos.x;
+        vbo[gid*4+1] = my_particle.pos.y;
+        vbo[gid*4+2] = my_particle.pos.z;
+        char *colors = (char *)&vbo[gid*4+3];
+        scalar depth = (my_particle.pos.y - c_minY) / (c_maxY - c_minY);
+        scalar num_neighbors = my_particle.num_neighbors;
+        num_neighbors = kgrid_MAX_CELL_SIZE - num_neighbors; // 5 to 0
+        num_neighbors /= kgrid_MAX_CELL_SIZE; // 1 to 0
+        colors[0] = (char)(9 + (num_neighbors * (65-9)));
+        colors[1] = (char)(24 + (num_neighbors * (191-24)));
+        colors[2] = (char)(84 + (num_neighbors * (229-84)));
+        colors[3] = 178;
     }
 }
 
@@ -673,6 +687,7 @@ __global__ void kgrid_findKNearestNeighbors(grid_gpu_block_t *g_particles,
 
     delta /= num_candidates;
     delta *= 100.0f;
+    g_particles[particle_id].num_neighbors = num_candidates;
 }
 
 /// calculate lambda - by particle

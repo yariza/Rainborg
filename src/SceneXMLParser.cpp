@@ -750,6 +750,7 @@ void SceneXMLParser::loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid) 
     for (rapidxml::xml_node<>* nd = node->first_node("fluidvolume"); nd; nd = nd->next_sibling("fluidvolume")) {
 
         scalar xmin, xmax, ymin, ymax, zmin, zmax;
+        scalar r = 0.317, g = 0.639, b = 1.0, a = 0.5;
         int numparticles = 100;
         fluid_volume_mode_t mode;
         bool random;
@@ -909,7 +910,84 @@ void SceneXMLParser::loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid) 
             exit(1);
         }
 
-        FluidVolume volume(xmin, xmax, ymin, ymax, zmin, zmax, numparticles, mode, random);
+        if (nd->first_attribute("r")) {
+            std::string attribute(nd->first_attribute("r")->value());
+            if( !stringutils::extractFromString(attribute,r) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of r attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+            if (r < 0 || r > 1) {
+                std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of r attribute for fluid volume. Value must be between 0 and 1. Exiting." << std::endl;
+                exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
+                  << "Missing r attribute for fluid volume. Using default values." << std::endl;
+        }
+
+        if (nd->first_attribute("g")) {
+            std::string attribute(nd->first_attribute("g")->value());
+            if( !stringutils::extractFromString(attribute,g) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of g attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+            if (g < 0 || g > 1) {
+                std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of g attribute for fluid volume. Value must be between 0 and 1. Exiting." << std::endl;
+                exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
+                  << "Missing g attribute for fluid volume. Using default values." << std::endl;
+        }
+
+        if (nd->first_attribute("b")) {
+            std::string attribute(nd->first_attribute("b")->value());
+            if( !stringutils::extractFromString(attribute,b) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of b attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+            if (b < 0 || b > 1) {
+                std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of b attribute for fluid volume. Value must be between 0 and 1. Exiting." << std::endl;
+                exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
+                  << "Missing b attribute for fluid volume. Using default values." << std::endl;
+        }
+
+        if (nd->first_attribute("a")) {
+            std::string attribute(nd->first_attribute("a")->value());
+            if( !stringutils::extractFromString(attribute,a) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of a attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+            if (a < 0 || a > 1) {
+                std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of a attribute for fluid volume. Value must be between 0 and 1. Exiting." << std::endl;
+                exit(1);
+            }
+        }
+        else {
+            std::cerr << outputmod::startpink << "Warning in XMLSceneParser:" << outputmod::endpink
+                  << "Missing a attribute for fluid volume. Using default values." << std::endl;
+        }
+
+        FluidVolume volume(xmin, xmax, ymin, ymax, zmin, zmax, numparticles, mode, random,
+                           r, g, b, a);
         if (spacing_selected) {
             volume.setSpacing(spacing);
         }

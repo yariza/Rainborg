@@ -86,7 +86,7 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
     m_shader.setMatrix4x4Uniform("worldToCameraMatrix", camera.getTransformMatrix().getInverse());
     m_shader.setMatrix4x4Uniform("projectionMatrix", camera.getProjectionMatrix());
 
-    glPointSize(5.0);
+    glPointSize(6.0);
     glEnable(GL_POINT_SMOOTH);
 
     //glEnable(GL_VERTEX_ARRAY);

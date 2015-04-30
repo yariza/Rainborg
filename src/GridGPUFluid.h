@@ -41,5 +41,7 @@ private:
     // dimension x*y*z
     int *d_grid;
 
+    Vector4s *d_colors;
+
 };
 #endif

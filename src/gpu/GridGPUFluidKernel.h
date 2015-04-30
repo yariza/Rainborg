@@ -11,8 +11,11 @@ typedef struct {
   Vector3s vec2;
   Vector3s vec3;
   scalar sca1;
-  scalar sca2;
-  scalar sca3;
+  char r;
+  char g;
+  char b;
+  char a;
+  char num_neighbors;
 } grid_gpu_block_t;
 
 extern "C" {
