@@ -110,7 +110,7 @@ void parseCommandLine(int argc, char **argv) {
       TCLAP::CmdLine cmd("Position-Based Fluid Sim");
 
       // XML scene file to load
-      TCLAP::ValueArg<std::string> scene("s", "scene", "Simulation to run; an xml scene file", false, "", "string", cmd);
+      TCLAP::ValueArg<std::string> scene("s", "scene", "Simulation to run; an xml scene file", true, "", "string", cmd);
 
       // Begin the scene paused or running
       TCLAP::ValueArg<bool> paused("p", "paused", "Begin the simulation paused if 1, running if 0", false, true, "boolean", cmd);
