@@ -8,7 +8,7 @@
 #define naive_MIN_NEIGHBORS 3
 
 #define naive_EPS .01
-#define naive_VORTICITY 0
+#define naive_VORTICITY 1
 #define naive_VORT_EPS .0001
 #define naive_XSPH 1
 #define naive_C .0001

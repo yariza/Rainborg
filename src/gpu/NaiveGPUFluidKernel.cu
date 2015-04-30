@@ -110,7 +110,7 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     GPU_CHECKERROR(cudaMalloc((void **)d_color, num_particles * 4 * sizeof(char))); 
 
     #if naive_VORTICITY > 0 
-    GPU_CHECKERROR(cudaMalloc((void **)&d_omega, num_particles * sizeof(Vector3s))); 
+    GPU_CHECKERROR(cudaMalloc((void **)d_omega, num_particles * sizeof(Vector3s))); 
     #endif
 
     int gridSize = ceil(num_particles / (1.0*naive_BLOCKSIZE_1D));
@@ -285,11 +285,12 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
     GPU_CHECKERROR(cudaThreadSynchronize());
     
     GPU_CHECKERROR(cudaMemcpy(d_vel, d_dpos, num_particles * sizeof(Vector3s), cudaMemcpyDeviceToDevice));
+    GPU_CHECKERROR(cudaThreadSynchronize());
 
     #if naive_VORTICITY == 0
     return;
     #endif
-    applyVorticity<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, dt, fp_mass, num_particles, max_neigh);
+    //applyVorticity<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, dt, fp_mass, num_particles, max_neigh);
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
 }
