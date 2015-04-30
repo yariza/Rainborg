@@ -303,12 +303,12 @@ void SerialFluid::calculatePressures(){
         
         //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
         
-        /*
+        
         if(p == 700){
             std::cout << "arb count: " << ncount << std::endl;
             std::cout << "arb press: " << m_fpmass * press << std::endl;
         }
-        */
+        
 
     }
     //std::cout << "ending Pressure calculations" << std::endl;
@@ -471,8 +471,10 @@ void SerialFluid::buildGrid(){
     int gind; 
     for(int i = 0; i < getNumParticles(); ++i){
         gind = getGridIdx(m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); 
-        m_grid[gind * m_maxNeighbors + m_gridCount[gind]] = i; 
-        m_gridCount[gind] ++; 
+        if(m_gridCount[gind] < m_maxNeighbors){
+            m_grid[gind * m_maxNeighbors + m_gridCount[gind]] = i; 
+            m_gridCount[gind] ++; 
+        }
     }
 
 }
@@ -503,7 +505,8 @@ void SerialFluid::updateFinalPosition(){
 void SerialFluid::applydPToPredPos(){
     for(int i = 0; i < getNumParticles(); ++i){
         m_ppos[i] += m_dpos[i]; 
-        
+
+    /*        
         if(glm::length(m_dpos[i]) > 5.0){
             std::cout << "huge update at " << i << std::endl;
             std::cout << "  pressure: " << m_pcalc[i] << std::endl;
@@ -512,8 +515,9 @@ void SerialFluid::applydPToPredPos(){
             std::cout << "  grid count: " << m_gridCount[m_gridInd[i]] << std::endl;
 
         }
-        
+ */       
     }
+    
 }
 
 void SerialFluid::updateVBO(float* dptrvert)

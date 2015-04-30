@@ -48,7 +48,7 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
 
         glGenBuffers(1, &vbo);
         glGenBuffers(1, &ibo);
-        //glGenBuffers(1, &cbo);
+        glGenBuffers(1, &cbo);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, 4*num_particles*sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
@@ -58,11 +58,23 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_particles*sizeof(GLuint), indices, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         
-        //glBindBuffer(GL_ARRAY_BUFFER, cbo);
-        //glColorPointer(4, GL_FLOAT, 0, fluid->getColors());
-        //glBufferData(GL_ARRAY_BUFFER, num_particles*4*sizeof(GLfloat), fluid->getColors(), GL_STATIC_DRAW); 
-        //glBindBuffer(GL_ARRAY_BUFFER, 0);// okay?
-        
+        Vector4s *cols = fluid->getColors();
+        GLfloat *gl_cols = (GLfloat *)malloc(num_particles * sizeof(GLfloat) * 4);
+        for(int i = 0; i < num_particles; ++i){
+            gl_cols[i*4+0] = cols[i][0];
+            gl_cols[i*4+1] = cols[i][1];
+            gl_cols[i*4+2] = cols[i][2];
+            gl_cols[i*4+3] = cols[i][3];
+        }        
+
+        /*
+        glBindBuffer(GL_ARRAY_BUFFER, cbo);
+        //glColorPointer(4, GL_FLOAT, 0, gl_cols);
+        glBufferData(GL_ARRAY_BUFFER, num_particles*4*sizeof(GLfloat), fluid->getColors(), GL_STATIC_DRAW); 
+        glBindBuffer(GL_ARRAY_BUFFER, 0);// okay?
+        */        
+
+        free(gl_cols);
 
         GPU_CHECKERROR(cudaGLRegisterBufferObject(vbo));
         
@@ -116,22 +128,10 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
-        glEnableClientState(GL_COLOR_ARRAY);
         
-        Vector4s *cols = m_fluid->getColors();
-        GLfloat *gl_cols = (GLfloat *)malloc(num_particles * sizeof(GLfloat) * 4);
-        for(int i = 0; i < num_particles; ++i){
-            gl_cols[i*4+0] = cols[i][0];
-            gl_cols[i*4+1] = cols[i][1];
-            gl_cols[i*4+2] = cols[i][2];
-            gl_cols[i*4+3] = cols[i][3];
-        }        
-
-        glColorPointer(4, GL_FLOAT, 0, gl_cols);
-
+       
         glDrawElements(GL_POINTS, num_particles, GL_UNSIGNED_INT, 0);
 
-        glDisableClientState(GL_COLOR_ARRAY);
         glDisableVertexAttribArray(position_location);
         #endif
     }

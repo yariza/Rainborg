@@ -605,10 +605,15 @@ __global__ void naive_buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount,
         }
         else{
             actgid ++;
+            if(actgid >= max_neigh){
+                placed = false;
+                break;
+            }
         }
     }
     //d_grid[gid * max_neigh + d_gridCount[gid]] = id;
-    atomicAdd(&d_gridCount[gid], 1);
+    if(placed)
+        atomicAdd(&d_gridCount[gid], 1);
 }
 
 __global__ void applydPToPPos(Vector3s* d_ppos, Vector3s* d_dpos, int num_particles){
