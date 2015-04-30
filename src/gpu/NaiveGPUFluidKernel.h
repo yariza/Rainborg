@@ -21,15 +21,15 @@
 extern "C" {
  
     void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
-                        scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, int max_neigh,  
+                        scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, char **d_color, int max_neigh,  
                         FluidVolume* h_volumes, int num_volumes,
                         FluidBoundingBox* h_boundingBox,
                         scalar h, bool random);
 
-    void naive_updateVBO(float *vboptr, Vector3s *d_pos, int num_particles);
+    void naive_updateVBO(float *vboptr, Vector3s *d_pos, char *d_color, int num_particles);
 
     void naive_cleanUp(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
-                        scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd);
+                        scalar **d_pcalc, scalar **d_lambda, int **d_grid, int **d_gridCount, int **d_gridInd, char **d_color);
 
     void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, Vector3s* d_omega, scalar *d_pcalc, scalar *d_lambda, scalar fp_mass,
                       int num_particles, int max_neigh, int *d_grid, int *d_gridCount, int *d_gridInd, int iters, scalar p0,

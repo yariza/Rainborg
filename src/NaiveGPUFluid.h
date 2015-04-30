@@ -33,6 +33,6 @@ private:
     int *d_gridCount;
     int *d_gridInd;   
     bool m_random; 
-
+    char *d_color;
 };
 #endif
