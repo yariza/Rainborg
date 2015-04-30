@@ -1,4 +1,5 @@
 #include "Fluid.h"
+#include "StringUtilities.h"
 
 Fluid::Fluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors) 
 : m_fpmass(mass)
@@ -82,6 +83,11 @@ const std::vector<FluidVolume>& Fluid::getFluidVolumes() const {
 
 void Fluid::insertFluidVolume(FluidVolume& volume) {
     m_volumes.push_back(volume);
+    int size = m_volumes.size();
+    int num_particles = m_volumes[size-1].m_numParticles;
+    std::cout << outputmod::startgreen << "Fluid: " << outputmod::endgreen
+              << "loaded volume " << size
+              << " with " << num_particles << " particles" << std::endl;
 }
 
 void Fluid::setBoundingBox(FluidBoundingBox* bound){

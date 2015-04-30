@@ -1,16 +1,20 @@
 #include "SceneXMLParser.h"
 #include "StringUtilities.h"
 #include "MathDefs.h"
+#include "FluidSimpleGravityForce.h"
+#include "GridGPUFluid.h"
+#include "NaiveGPUFluid.h"
 
 void SceneXMLParser::loadSimulation(const std::string& file_name,
-                        bool rendering_enabled,
-                        openglframework::GLFWViewer* viewer,
-                        Simulation** sim,
-                        scalar& dt,
-                        scalar& max_time,
-                        scalar& steps_per_sec_cap,
-                        openglframework::Color& bgcolor,
-                        std::string& description) {
+                                    bool rendering_enabled,
+                                    bool gpu_enabled,
+                                    openglframework::GLFWViewer* viewer,
+                                    Simulation** sim,
+                                    scalar& dt,
+                                    scalar& max_time,
+                                    scalar& steps_per_sec_cap,
+                                    openglframework::Color& bgcolor,
+                                    std::string& description) {
 
     // Load the xml document
     std::vector<char> xmlchars;
@@ -40,7 +44,7 @@ void SceneXMLParser::loadSimulation(const std::string& file_name,
 
     loadSimpleGravityForces(node, *scene);
 
-    loadFluids(node, *scene);
+    loadFluids(node, *scene, gpu_enabled);
 
     SceneRenderer *renderer = NULL;
     if (rendering_enabled)
@@ -487,7 +491,7 @@ void SceneXMLParser::loadSimpleGravityForces(rapidxml::xml_node<>* node, Scene& 
     }
 }
 
-void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
+void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene, bool gpu_enabled) {
 
     assert(node != NULL);
 
@@ -497,6 +501,7 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
         int numParticles = 0;
         scalar mass, p0, h, iters;
         int minneighbors, maxneighbors;
+        std::string type;
 
         if (nd->first_attribute("mass")) {
             std::string attribute(nd->first_attribute("mass")->value());
@@ -588,8 +593,32 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene) {
             exit(1);
         }
 
-        //TODO check for type
-        Fluid *fluid = new SerialFluid(mass, p0, h, iters, maxneighbors, minneighbors);
+        if (nd->first_attribute("type")) {
+            type = (nd->first_attribute("type")->value());
+            if( type != "naive" && type != "grid" ) {
+                std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of type attribute for fluid. Value must be either naive or grid. Exiting." << std::endl;
+                exit(1);
+            }
+        }
+        else {
+            if (gpu_enabled) {
+                type = "grid";
+            }
+        }
+
+        Fluid *fluid = NULL;
+        if (gpu_enabled) {
+            if (type == "grid") {
+                fluid = new GridGPUFluid(mass, p0, h, iters, maxneighbors, minneighbors);
+            }
+            else {
+                fluid = new NaiveGPUFluid(mass, p0, h, iters, maxneighbors, minneighbors);
+            }
+        }
+        else {
+            fluid = new SerialFluid(mass, p0, h, iters, maxneighbors, minneighbors);
+        }
 
         loadFluidBoundingBox(nd, *fluid);
         loadFluidVolumes(nd, *fluid);
@@ -721,9 +750,12 @@ void SceneXMLParser::loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid) 
     for (rapidxml::xml_node<>* nd = node->first_node("fluidvolume"); nd; nd = nd->next_sibling("fluidvolume")) {
 
         scalar xmin, xmax, ymin, ymax, zmin, zmax;
-        int numparticles;
+        int numparticles = 100;
         fluid_volume_mode_t mode;
         bool random;
+        scalar spacing;
+        bool particle_selected = false;
+        bool spacing_selected = false;
 
         if (nd->first_attribute("xmin")) {
             std::string attribute(nd->first_attribute("xmin")->value());
@@ -823,10 +855,21 @@ void SceneXMLParser::loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid) 
                   << "Failed to parse value of numparticles attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
               exit(1);
             }
+            particle_selected = true;
         }
-        else {
+        if (nd->first_attribute("spacing")) {
+            std::string attribute(nd->first_attribute("spacing")->value());
+            if( !stringutils::extractFromString(attribute,spacing) )
+            {
+              std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                  << "Failed to parse value of spacing attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+              exit(1);
+            }
+            spacing_selected = true;
+        }
+        if (!particle_selected && !spacing_selected) {
             std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
-                  << "Missing numparticles attribute for fluid volume. Value must be scalar. Exiting." << std::endl;
+                  << "Missing either spacing or numparticles attribute for fluid volume. Values must be scalar. Exiting." << std::endl;
             exit(1);
         }
 
@@ -867,7 +910,11 @@ void SceneXMLParser::loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid) 
         }
 
         FluidVolume volume(xmin, xmax, ymin, ymax, zmin, zmax, numparticles, mode, random);
+        if (spacing_selected) {
+            volume.setSpacing(spacing);
+        }
         fluid.insertFluidVolume(volume);
+
         volumenum++;
     }
 

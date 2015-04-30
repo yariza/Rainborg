@@ -153,74 +153,8 @@ void loadScene( const std::string& file_name) {
     assert( g_simulation == NULL );
     // XML parse scene here
     SceneXMLParser xml_scene_parser;
-    // xml_scene_parser.loadSimulation( file_name, g_rendering_enabled, g_viewer, &g_simulation,
-    //                                 g_dt, max_time, steps_per_sec_cap, g_bgcolor, g_description);
-
-    //PLACEHOLDER
-        Scene *scene = new Scene();
-
-        FluidSimpleGravityForce* sgf = new FluidSimpleGravityForce(0, -10.0, 0);
-        scene->insertFluidForce(sgf);
-
-        FluidBoundingBox* fbox = new FluidBoundingBox(0, 20, 0, 20, 0, 20);
-
-        Fluid *fluid;
-        if (g_gpu_mode){
-            #ifdef GPU_ENABLED
-            fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
-            //fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
-            //fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
-            #endif
-        }
-        else{
-            fluid = new SerialFluid(1.0, 1000000.0, .5, 3, 100, 3); 
-        }
-         //fluid.setFPMass(2.0);
-         //fluid.setRestDensity(1.0);
-         // float x;
-         // float y;
-         // float z;
-         // for(int i = 0; i < 3000; ++i){
-         //     x = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-         //     y = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-         //     z = static_cast <float> (rand()) / static_cast<float>(RAND_MAX/9.0);
-         //     fluid->setFPPos(i, Vector3s(x, y, z));
-         //     fluid->setFPVel(i, Vector3s(0, 0, 0));
-         // }
-
-        //fluid->setFPPos(1, Vector3s(.2, .2, .1));
-         //fluid->setFPVel(1, Vector3s(-.1, 0, 0));
-        fluid->setBoundingBox(fbox);
-
-        //FluidVolume volume(0, 9, 0, 9, 0, 9, 30000, kFLUID_VOLUME_MODE_BOX, true);
-        FluidVolume volume(0, 20, 0, 2, 0, 20, 10000, kFLUID_VOLUME_MODE_BOX, true);
-        FluidVolume volume2(0, 10, 3, 20, 0, 10, 10000, kFLUID_VOLUME_MODE_BOX, true);        
-
-        std::cout << "num1: " << volume.setSpacing(0.5) << std::endl;
-        std::cout << "num2: " << volume2.setSpacing(0.5) << std::endl;
-
-        fluid->insertFluidVolume(volume);
-        fluid->insertFluidVolume(volume2);
-
-        scene->insertFluid(fluid);
-
-        //FluidBrick *fbrick = new FluidBrick(0, 1, 0, 1, 0, 1);
-        //scene->insertFluidBoundary(fbrick);
-
-    //#endif
-
-        Stepper *stepper = new Stepper();
-
-        // stepper.stepScene(scene, .01);
-
-        SceneRenderer *renderer = NULL;
-        if (g_rendering_enabled)
-            renderer = new SceneRenderer(scene);
-
-        g_simulation = new Simulation(scene, stepper, renderer);
-        g_dt = 0.01;
-        max_time = 20.0;
-    //END PLACEHOLDER
+    xml_scene_parser.loadSimulation( file_name, g_rendering_enabled, g_gpu_mode, g_viewer, &g_simulation,
+                                    g_dt, max_time, steps_per_sec_cap, g_bgcolor, g_description);
 
     g_simulation->load();
 
@@ -245,19 +179,19 @@ int main(int args, char **argv)
     }
     #endif
 
+    if (g_rendering_enabled)
+        initializeOpenGLandGLFW();
+
     parseCommandLine(args, argv);
     loadScene(g_xml_scene_file);
 
     // Wow this is going to be my terrible, terrible 'test' function thing
     // testBasicSetup();
     
-    if (g_rendering_enabled)
-        initializeOpenGLandGLFW();
 
     #ifdef GPU_ENABLED
     if(g_gpu_mode && g_rendering_enabled){
         GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
-        std::cout << "set device" << std::endl;
     }
     #endif
 

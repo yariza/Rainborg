@@ -40,8 +40,6 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
       vertices = new GLfloat[4 * num_particles];
       indices = new GLuint[num_particles];
 
-        std::cout << "gpu and render" << std::endl;
-
         GLfloat x, y, z;
         for (int i=0; i<fluid->getNumParticles(); i++) {
             indices[i] = i;

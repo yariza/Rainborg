@@ -7,13 +7,13 @@
 
 #include <openglframework.h>
 #include "Simulation.h"
-#include "FluidSimpleGravityForce.h"
 
 class SceneXMLParser {
 
 public:
     void loadSimulation(const std::string& file_name,
                         bool rendering_enabled,
+                        bool gpu_enabled,
                         openglframework::GLFWViewer* viewer,
                         Simulation** sim,
                         scalar& dt,
@@ -34,7 +34,7 @@ public:
 
     void loadSimpleGravityForces(rapidxml::xml_node<>* node, Scene& scene);
 
-    void loadFluids(rapidxml::xml_node<>* node, Scene& scene);
+    void loadFluids(rapidxml::xml_node<>* node, Scene& scene, bool gpu_enabled);
     void loadFluidBoundingBox(rapidxml::xml_node<>* node, Fluid& fluid);
     void loadFluidVolumes(rapidxml::xml_node<>* node, Fluid& fluid);
 
