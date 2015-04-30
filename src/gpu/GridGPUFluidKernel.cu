@@ -321,12 +321,13 @@ __global__ void kgrid_updateVBO(float* vbo, grid_gpu_block_t *g_particles, int n
         char *colors = (char *)&vbo[gid*4+3];
         scalar depth = (my_particle.pos.y - c_minY) / (c_maxY - c_minY);
         scalar num_neighbors = my_particle.num_neighbors;
-        num_neighbors = kgrid_MAX_CELL_SIZE - num_neighbors; // 5 to 0
-        num_neighbors /= kgrid_MAX_CELL_SIZE; // 1 to 0
+        num_neighbors = kgrid_MAX_CELL_SIZE - num_neighbors - 10; // 5 to 0
+        if (num_neighbors < 0) num_neighbors = 0;
+        num_neighbors /= kgrid_MAX_CELL_SIZE - 10; // 1 to 0
         colors[0] = (char)(9 + (num_neighbors * (65-9)));
         colors[1] = (char)(24 + (num_neighbors * (191-24)));
         colors[2] = (char)(84 + (num_neighbors * (229-84)));
-        colors[3] = 178;
+        colors[3] = (char)178;
     }
 }
 
