@@ -253,11 +253,13 @@ void stepSystem() {
     
     g_current_step++;
 
-    #ifdef PNGOUT
-    std::stringstream oss;
-    oss << "pngs/frame" << std::setw(5) << std::setfill('0') << g_current_step << ".png";
-    dumpPNG(oss.str());
-    #endif
+    if (g_rendering_enabled) {
+#ifdef PNGOUT
+        std::stringstream oss;
+        oss << "pngs/frame" << std::setw(5) << std::setfill('0') << g_current_step << ".png";
+        dumpPNG(oss.str());
+#endif
+    }
 
 }
 
