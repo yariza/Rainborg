@@ -612,12 +612,18 @@ void SceneXMLParser::loadFluids(rapidxml::xml_node<>* node, Scene& scene, bool g
 
         Fluid *fluid = NULL;
         if (gpu_enabled) {
+#ifdef GPU_ENABLED
             if (type == "grid") {
                 fluid = new GridGPUFluid(mass, p0, h, iters, maxneighbors, minneighbors);
             }
             else {
                 fluid = new NaiveGPUFluid(mass, p0, h, iters, maxneighbors, minneighbors);
             }
+#else
+            std::cerr << outputmod::startred << "ERROR IN XMLSCENEPARSER:" << outputmod::endred
+                      << "Cannot load fluid type" << type << ". Compile again with CMake flag GPU_ENABLED turned on. Exiting." << std::endl;
+                exit(1);
+#endif
         }
         else {
             fluid = new SerialFluid(mass, p0, h, iters, maxneighbors, minneighbors);
