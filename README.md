@@ -102,6 +102,10 @@ The algorithms in this project follow the following papers:
 
 [Miles Macklin, Matthias Muller, Position Based Fluids](http://mmacklin.com/pbf_sig_preprint.pdf)
 
+[Takahiro Harada, Seiichi Koshizuka, Yoichiro Kawaguchi, Smoothed Particle Hydrodynamics on GPUs](http://www.inf.ufrgs.br/cgi2007/cd_cgi/papers/harada.pdf)
+
+Techniques for CUDA-OpenGL interop functions are used from here: http://www.nvidia.com/content/gtc/documents/1055_gtc09.pdf
+
 Additionally, an C++ OpenGL framework by Daniel Chappuis is modified for use in this project: https://github.com/DanielChappuis/opengl-framework
 
 Finally, some XML parsing and Math utility functions are taken from FOSSSim, the codebase from Computer Animation W4167.
