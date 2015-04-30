@@ -461,9 +461,9 @@ __global__ void naive_kupdateVBO(float *vbo, Vector3s *d_pos, char *d_color, int
 
     #if naive_COLOR_MODE == naive_COLOR_MODE_DEPTH
         scalar scale = (y - c_minY)/(c_maxY - c_minY);
-        col[0] = 9 + scale * (102-9);
-        col[1] = 7 + scale * (232 - 6);
-        col[2] = 5 + scale * (242-5);
+        col[0] = 29 + scale * (102-29);
+        col[1] = 27 + scale * (232 - 26);
+        col[2] = 25 + scale * (242-25);
         col[3] = 160;
  
     #endif
