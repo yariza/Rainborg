@@ -303,12 +303,12 @@ void SerialFluid::calculatePressures(){
         
         //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
         
-        
+        /*
         if(p == 700){
             std::cout << "arb count: " << ncount << std::endl;
             std::cout << "arb press: " << m_fpmass * press << std::endl;
         }
-        
+        */
 
     }
     //std::cout << "ending Pressure calculations" << std::endl;
