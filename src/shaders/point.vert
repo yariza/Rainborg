@@ -16,4 +16,5 @@ void main() {
     // Compute the clip-space vertex coordinates
     gl_Position = projectionMatrix * worldToCameraMatrix * worldPos;
     gl_FrontColor = gl_Color;
+    gl_BackColor = gl_Color;
 }

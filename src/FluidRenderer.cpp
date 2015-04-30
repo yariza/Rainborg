@@ -29,6 +29,7 @@ static void gpuCheckError(cudaError_t err, const char *file, int line){
 FluidRenderer::FluidRenderer(Fluid* fluid)
 : m_fluid(fluid)
 , position_location(0)
+, color_location(12)
 , m_shader("shaders/point.vert", "shaders/point.frag")
 {
     assert(m_fluid != NULL);
@@ -36,7 +37,7 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
     if (g_gpu_mode) {
       #ifdef GPU_ENABLED
       int num_particles = fluid->getNumParticles();
-      vertices = new GLfloat[8 * num_particles];
+      vertices = new GLfloat[4 * num_particles];
       indices = new GLuint[num_particles];
 
         std::cout << "gpu and render" << std::endl;
@@ -48,23 +49,14 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
 
         glGenBuffers(1, &vbo);
         glGenBuffers(1, &ibo);
-        //glGenBuffers(1, &cbo);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, 8*num_particles*sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 4*num_particles*sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_particles*sizeof(GLuint), indices, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-       
-        /*
-        glBindBuffer(GL_ARRAY_BUFFER, cbo);
-        glBufferData(GL_ARRAY_BUFFER, num_particles*4*sizeof(GLfloat), fluid->getColors(), GL_STATIC_DRAW); 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);// okay?
-        */
-
-        //free(gl_cols);
 
         GPU_CHECKERROR(cudaGLRegisterBufferObject(vbo));
         
@@ -79,7 +71,6 @@ FluidRenderer::~FluidRenderer() {
 
 void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
-    std::cout << "started render" << std::endl;
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -109,47 +100,25 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
         float *dptrvert=NULL;
     
-        std::cout << "start cudaGLMapBufferObject" << std::endl;
     
         #ifdef GPU_ENABLED
         GPU_CHECKERROR(cudaGLMapBufferObject((void**)&dptrvert, vbo));
-        std::cout << "before updateVBO" << std::endl;
         m_fluid->updateVBO(dptrvert);
-        // updateVBOGPUFluid(dptrvert); // update conient inside vbo object - implement this method in kernel!
-        std::cout << "unmap" << std::endl;
         GPU_CHECKERROR(cudaGLUnmapBufferObject(vbo));
-
-//        glEnableVertexAttribArray(position_location);
-//        std::cout << "enable vertex attrib array 1" << std::endl;
- //       glEnableVertexAttribArray(1);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         
-        std::cout << "enable client states" << std::endl;
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
     
-        //std::cout << "bind buffer" << std::endl;
-        //glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        //std::cout << "vertex attrib pointer" << std::endl;
-        //glVertexAttribPointer(position_location, 8, GL_FLOAT, GL_FALSE, 0, 0);
-        glVertexPointer(4, GL_FLOAT, 32, 0);
-        glColorPointer(4, GL_FLOAT, 32, (void *)16);
+        glVertexPointer(3, GL_FLOAT, 16, (void *)position_location);
+        glColorPointer(4, GL_UNSIGNED_BYTE, 16, (void *)color_location);
 
-        std::cout << "gl bind buffer" << std::endl; 
-  //      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-
-        
-       
-        //glDrawElements(GL_POINTS, num_particles, GL_UNSIGNED_INT, 0);
-        //glColor4f(0.0f, 1.0f, 0.0f, .6f);
-    
-        std::cout << "draw arrays" << std::endl;
         glDrawArrays(GL_POINTS, 0, num_particles);
-        std::cout << "what now" << std::endl;
 
-        //glDisableVertexAttribArray(position_location);
-        //glDisableVertexAttribArray(1);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_COLOR_ARRAY);
+
         #endif
     }
     else {

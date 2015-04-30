@@ -166,9 +166,9 @@ void loadScene( const std::string& file_name) {
         Fluid *fluid;
         if (g_gpu_mode){
             #ifdef GPU_ENABLED
-            //fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
+            fluid = new GridGPUFluid(1.0, 1000000, 0.5, 3, 100, 3);
             //fluid = new GridGPUFluid(50000.0, 190000.0, 1., 3, 100, 3);
-            fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
+            //fluid = new NaiveGPUFluid(1.0, 1000000.0, .5, 3, 100, 3);
             #endif
         }
         else{
