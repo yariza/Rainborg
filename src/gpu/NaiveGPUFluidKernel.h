@@ -17,6 +17,9 @@
 #define naive_DQ .3
 #define naive_K .1
 
+#define naive_COLOR_MODE_NORMAL 0
+#define naive_COLOR_MODE_DEPTH 1
+#define naive_COLOR_MODE 1
 
 extern "C" {
  

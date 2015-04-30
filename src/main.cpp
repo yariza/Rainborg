@@ -63,6 +63,9 @@ void dumpPNG(const std::string &filename);
 Simulation* g_simulation;
 openglframework::GLFWViewer* g_viewer;
 openglframework::Color g_bgcolor(0.0, 0.0, 0.0, 1.0);
+//openglframework::Color g_bgcolor(60.0/255.0, 54.0/255.0, 54.0/255.0, 1.0);
+
+
 
 bool g_rendering_enabled = true;
 double g_sec_per_frame;

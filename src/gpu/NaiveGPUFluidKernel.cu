@@ -117,7 +117,6 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     naive_initColors<<<gridSize, naive_BLOCKSIZE_1D>>>(*d_color, g_volumes, num_particles, num_volumes); 
     GPU_CHECKERROR(cudaGetLastError()); 
 
-
     if(!random) {
         naive_initializePositions<<<gridSize, naive_BLOCKSIZE_1D>>>(*d_pos, g_volumes, num_particles, num_volumes); 
         GPU_CHECKERROR(cudaGetLastError()); 
@@ -441,20 +440,33 @@ __global__ void naive_initColors(char *d_color, FluidVolume* g_volumes,
 }
 
 
-
-
 __global__ void naive_kupdateVBO(float *vbo, Vector3s *d_pos, char *d_color, int num_particles){
     int id = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(id < num_particles){
-        vbo[id*4+0] = d_pos[id][0];
-        vbo[id*4+1] = d_pos[id][1];
-        vbo[id*4+2] = d_pos[id][2];
-
+        scalar x = d_pos[id][0];
+        scalar y = d_pos[id][1];
+        scalar z = d_pos[id][2];
+        vbo[id*4+0] = x;
+        vbo[id*4+1] = y;
+        vbo[id*4+2] = z;
+        
         char *col = (char *)&vbo[id*4+3];
+ 
+    #if naive_COLOR_MODE == naive_COLOR_MODE_NORMAL
         col[0] = d_color[id*4+0];
         col[1] = d_color[id*4+1];
         col[2] = d_color[id*4+2];
         col[3] = d_color[id*4+3];
+    #endif
+
+    #if naive_COLOR_MODE == naive_COLOR_MODE_DEPTH
+        scalar scale = (y - c_minY)/(c_maxY - c_minY);
+        col[0] = 9 + scale * (102-9);
+        col[1] = 7 + scale * (232 - 6);
+        col[2] = 5 + scale * (242-5);
+        col[3] = 160;
+ 
+    #endif
 
     }
 }
