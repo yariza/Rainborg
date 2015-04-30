@@ -32,8 +32,11 @@ void SceneXMLParser::loadSimulation(const std::string& file_name,
 
     loadMaxTime(node, max_time);
     loadMaxSimFrequency(node, steps_per_sec_cap);
-    loadCamera(node, viewer);
-    loadViewport(node, viewer);
+
+    if (rendering_enabled) {
+        loadCamera(node, viewer);
+        loadViewport(node, viewer);
+    }
 
     Stepper* stepper = NULL;
     loadStepper(node, dt, &stepper);

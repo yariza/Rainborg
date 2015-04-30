@@ -179,10 +179,11 @@ int main(int args, char **argv)
     }
     #endif
 
+    parseCommandLine(args, argv);
+
     if (g_rendering_enabled)
         initializeOpenGLandGLFW();
 
-    parseCommandLine(args, argv);
     loadScene(g_xml_scene_file);
 
     // Wow this is going to be my terrible, terrible 'test' function thing

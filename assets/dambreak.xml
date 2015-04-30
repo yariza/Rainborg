@@ -2,8 +2,8 @@
     <description text="Test scene for PBF Sim"/>
 
     <maxsimfreq max="100.0"/>
-    <duration time="120.0"/>
-    <viewport width="500" height="500" />
+    <duration time="20.0"/>
+    <viewport width="1200" height="800" />
     <camera cx="0.0" cy="0.0" cz="0.0"
             fov="45"
             />
