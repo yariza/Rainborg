@@ -3,11 +3,11 @@
 
 #include "MathDefs.h"
 
+// Abstract class for things the fluid can interact with
 class FluidBoundary {
 
 public:
     virtual ~FluidBoundary();
-    //virtual void dealWithCollisions(scalar *pos, scalar *dpos, int numParticles) = 0; 
     virtual void dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numParticles) = 0; 
 
 

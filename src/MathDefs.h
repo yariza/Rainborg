@@ -14,8 +14,11 @@ typedef float scalar;  // so that we can deal with scalar without worrying about
 typedef glm::vec3 Vector3s; 
 typedef glm::vec4 Vector4s; 
 
+// utility to print this data type
 void printVec3(Vector3s vec);
 
+// the kernel functions
+// definitions from www8.cs.umu.se/kurser/TDBD24/VT06/lectures/sphsurvivalkit.pdf
 scalar wPoly6Kernel(Vector3s &pi, Vector3s &pj, scalar h); 
 scalar wSpikyKernel(Vector3s &pi, Vector3s &pj, scalar h); 
 scalar wViscosityKernel(Vector3s &pi, Vector3s &pj, scalar h); 

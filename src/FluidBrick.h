@@ -4,6 +4,8 @@
 #include "FluidBoundary.h"
 #include "MathDefs.h"
 
+// Unused at the moment
+// A volume that keeps the fluid OUTSIDE its bounds (as opposed to FluidBoundingBox, which keeps it in)
 class FluidBrick : public FluidBoundary {
 public: 
     FluidBrick();
@@ -12,7 +14,6 @@ public:
     FluidBrick& operator=(const FluidBrick& otherBrick);
 
     virtual ~FluidBrick(); 
-    //virtual void dealWithCollisions(scalar *pos, scalar *dpos, int numParticles); 
     virtual void dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numParticles); 
 
     // Need the bounds for calculating the grid

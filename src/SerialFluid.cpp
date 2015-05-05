@@ -3,42 +3,11 @@
 
 SerialFluid::SerialFluid(scalar mass, scalar p0, scalar h, int iters, int maxNeighbors, int minNeighbors)
 : Fluid(mass, p0, h, iters, maxNeighbors, minNeighbors)
-, m_eps(.01) // wow this is terrible
+, m_eps(.01) 
 {
-    // Allocate memory for m_pos, m_ppos, m_vel, m_accumForce? 
-
     // DEFER ALL LOADING TO Fluid.loadFluidVolumes()
-
-    // m_numParticles = numParticles;
-    // //m_pos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    // //m_ppos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    // m_lambda = (scalar *)malloc(numParticles * sizeof(scalar)); 
-    // m_pcalc = (scalar *)malloc(numParticles * sizeof(scalar)); 
-    // memset(m_pcalc, 0, numParticles * sizeof(scalar));
-    // //m_dpos = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    // //m_vel = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    // //m_accumForce = (scalar *)malloc(numParticles * 3 * sizeof(scalar));
-    
-    // m_pos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
-    // m_ppos = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
-    // m_dpos = (Vector3s *)malloc(numParticles * sizeof(Vector3s));
-    // m_vel = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
-    // m_accumForce = (Vector3s *)malloc(numParticles * sizeof(Vector3s)); 
-    // m_colors = (Vector4s *)malloc(numParticles * sizeof(Vector4s)); 
-
-    // m_gridInd = (int *)malloc(numParticles * 3 * sizeof(int));
     m_grid = NULL; // don't know bounding box yet
     m_gridCount = NULL;
-
-    // assert (m_pos != NULL);
-    // assert(m_ppos != NULL);
-    // assert(m_lambda != NULL); 
-    // assert(m_pcalc != NULL); 
-    // assert(m_dpos != NULL);
-    // assert(m_vel != NULL);
-    // assert(m_gridInd != NULL);
-    // assert(m_accumForce != NULL);
-    // assert(m_colors != NULL); 
 }
 
 
@@ -46,47 +15,9 @@ SerialFluid::SerialFluid(const SerialFluid& otherFluid)
 : Fluid(otherFluid)
 , m_eps(.01)
 {
-
     // loadFluidVolumes is necessary to reallocate stuff again
 
-    // Allocate memory 
-    //m_pos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    //m_ppos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    // m_lambda = (scalar *)malloc(m_numParticles * sizeof(scalar));
-    // m_pcalc = (scalar *)malloc(m_numParticles * sizeof(scalar)); 
-    // memset(m_pcalc, 0, m_numParticles * sizeof(scalar));
-    //m_dpos = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar)); 
-    //m_vel = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    //m_accumForce = (scalar *)malloc(m_numParticles * 3 * sizeof(scalar));
-    // m_gridInd = (int *)malloc(m_numParticles * 3 * sizeof(int));
-
-    // m_pos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
-    // m_ppos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
-    // m_dpos = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s));
-    // m_vel = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
-    // m_accumForce = (Vector3s *)malloc(m_numParticles * sizeof(Vector3s)); 
-    // m_colors = (Vector4s *)malloc(m_numParticles * sizeof(Vector4s)); 
-
-    // assert (m_pos != NULL);
-    // assert(m_ppos != NULL);
-    // assert(m_pcalc != NULL); 
-    // assert(m_lambda != NULL); 
-    // assert(m_dpos != NULL);
-    // assert(m_vel != NULL);
-    // assert(m_accumForce != NULL);
-    // assert(m_gridInd != NULL); 
-    // assert(m_colors != NULL); 
-    // Set positions, velocity 
-    // Note: predicted positions, accumulatedForces are recalculated each time step so no point copying those
-
-
-    //memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * 3 * sizeof(scalar));
-    //memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * 3 * sizeof(scalar));
-
-    // memcpy(m_pos, otherFluid.getFPPos(), m_numParticles * sizeof(Vector3s)); 
-    // memcpy(m_vel, otherFluid.getFPVel(), m_numParticles * sizeof(Vector3s)); 
-    // memcpy(m_colors, otherFluid.getColors(), m_numParticles * sizeof(Vector4s)); 
-
+	// Get grid size from bounding box, partitioned by kernel width
     m_gridX = ceil(m_boundingBox->width()/m_h);
     m_gridY = ceil(m_boundingBox->height()/m_h);
     m_gridZ = ceil(m_boundingBox->depth()/m_h);
@@ -116,25 +47,9 @@ SerialFluid::~SerialFluid(){
         free(m_gridCount);
 }
 
-
-// use fluid volumes instead
-// void SerialFluid::setFPPos(int fp, const Vector3s& pos){
-//     // assert(fp >= 0 && fp < m_numParticles);
-
-//     m_pos[fp] = pos; 
-
-//     //    m_pos[fp*3] = pos[0];
-//     //    m_pos[fp*3+1] = pos[1];
-//     //    m_pos[fp*3+2] = pos[2];
-// }
-
 void SerialFluid::setFPVel(int fp, const Vector3s& vel){
     // assert(fp >= 0 && fp < m_numParticles);
     m_vel[fp] = vel;  
-
-    //    m_vel[fp*3] = vel[0];
-    //    m_vel[fp*3+1] = vel[1];
-    //    m_vel[fp*3+2] = vel[2];
 }
 
 void SerialFluid::setBoundingBox(FluidBoundingBox* bound){
@@ -161,14 +76,6 @@ void SerialFluid::setColor(int i, const Vector4s& col){
     m_colors[i] = col; 
 }
 
-//scalar* SerialFluid::getFPPos() const{
-//    return m_pos;
-//}
-
-//scalar* SerialFluid::getFPVel() const{
-//    return m_vel;
-//}
-
 Vector3s* SerialFluid::getFPPos() const{
     return m_pos; 
 }
@@ -176,11 +83,7 @@ Vector3s* SerialFluid::getFPPos() const{
 Vector3s* SerialFluid::getFPVel() const{
     return m_vel;
 }
-/*
-Vector4s* SerialFluid::getColors() const{
-    return m_colors; 
-}
-*/
+
 void SerialFluid::loadFluidVolumes() {
 
     int numParticles = getNumParticles();
@@ -210,86 +113,63 @@ void SerialFluid::loadFluidVolumes() {
     }
 }
 
+// Calculate positions, velocities for next time step
 void SerialFluid::stepSystem(Scene& scene, scalar dt){
-    //std::cout << "step" << std::endl;
 
-    accumulateForce(scene); // makes more sense 
+	// Accumulate forces in scene
+    accumulateForce(scene); 
 
-    //printVec3(m_vel[0]); 
+	// Apply forces to velocity
     updateVelocityFromForce(dt); 
     
+	// Predict positions by applying velocity to current positions
     updatePredPosition(dt); 
     
-    // make sure that predicted positions don't go out of bounds here 
+    // Make sure that predicted positions don't go out of bounds here 
     memset(m_dpos, 0, getNumParticles() * sizeof(Vector3s)); 
     preserveOwnBoundary(); 
     
+	// Update predicted positions to stay in bounds
     applydPToPredPos();
-    //std::cout << "building grid" << std::endl;  
     buildGrid();   // Or at least, since neighbors are just adjacent grids, build grid structure
 
-    // loop for solve iterations
+    // Loop for solve iterations
     for(int loop = 0; loop < m_iters; ++loop){
-        //std::cout << "in loop " << loop << std::endl;
-        // calculate lambda for each particle
-        //std::cout << "calculating pressures" << std::endl;
+		// Fluids have constraint to maintain constant pressure
+		// Calculate necessary movement to best handle constraint
         calculatePressures(); 
-        //std::cout << "calculating lambdas" << std::endl;
         calculateLambdas();  
-        // Calculate dpos for each particle
-        //std::cout << "calculating dpos" << std::endl;
         calculatedPos(); 
 
-        // Deal with collision detection and response
-        //std::cout << "dealing with collisions" << std::endl;
+		// Resolve collisions with objects in scene and boundary
         dealWithCollisions(scene); 
-        //std::cout << "own boundary" << std::endl;
         preserveOwnBoundary(); 
 
         // Update predicted position with dP
-        //std::cout << "applying dpos to ppos" << std::endl;
         applydPToPredPos(); 
     }
-    //std::cout << "end loop" << std::endl;
 
     // Update velocities
-    //std::cout << "recalculating velocities" << std::endl;
     recalculateVelocity(dt); 
-    //std::cout << "new vel: " << std::endl;
-    //updateVelocityFromForce(dt);  // Yeah no this shouldn't be here
 
-    // Apply vorticity confinement and XSPH viscosity
-
-    //std::cout << "updating final positions" << std::endl;
     updateFinalPosition(); 
-
-    //std::cout << "end step system" << std::endl;
 }
 
-// Wow this is the ugliest loop something is sure to be wrong somewhere
-// If not enough neighbors? Chosen behaviour: set pressure to rest; don't act on constraints
 void SerialFluid::calculatePressures(){
-    //std::cout << "starting Pressure calculations" << std::endl;
     int gi = 0; // current grid id
     scalar press; 
     int ncount; // number of neighbors
     for(int p = 0; p < getNumParticles(); ++p){
-        // grab neighbors?  
+        // Calculate pressure at each particle by grabbing all neighbors, determining their distance and mass
         ncount = 0; 
         press = 0;
         for(int i = std::max(0, m_gridInd[p*3]-1); i <= std::min(m_gridX-1, m_gridInd[p*3]+1); ++i){
             for(int j = std::max(0, m_gridInd[p*3+1]-1); j <= std::min(m_gridY-1, m_gridInd[p*3+1]+1); ++j){
                 for(int k = std::max(0, m_gridInd[p*3+2]-1); k <= std::min(m_gridZ-1, m_gridInd[p*3+2]+1); ++k){
                     gi = getGridIdx(i, j, k); 
-                    //std::cout << "grid " << gi << " has " << m_gridCount[gi] << std::endl;
                     for(int n = 0; n < m_gridCount[gi]; ++n){ // for all particles in the grid
-                        //std::cout << "m_grid[gi]: " << m_grid[gi] << std::endl;
-                        //std::cout << "neighbor at: " << m_grid[gi *m_maxNeighbors + n] << std::endl;
-                        //printVec3(m_ppos[p]); 
-                        //printVec3(m_ppos[m_grid[gi] * m_maxNeighbors + n]);
                         scalar pressN = wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
                         press += pressN;
-                        //press += wPoly6Kernel(m_ppos[p], m_ppos[m_grid[gi * m_maxNeighbors + n]], m_h); 
                         if(pressN > 0)
                             ++ ncount; 
                     }            
@@ -300,18 +180,7 @@ void SerialFluid::calculatePressures(){
             m_pcalc[p] = m_p0; 
         else 
             m_pcalc[p] = m_fpmass * press; // Wow I totally forgot that
-        
-        //std::cout << "particle " << p << " has " << ncount << "neighbors" << std::endl;
-        
-        /*
-        if(p == 700){
-            std::cout << "arb count: " << ncount << std::endl;
-            std::cout << "arb press: " << m_fpmass * press << std::endl;
-        }
-        */
-
     }
-    //std::cout << "ending Pressure calculations" << std::endl;
 }
 
 Vector3s SerialFluid::calcGradConstraint(Vector3s& pi, Vector3s& pj){
@@ -319,7 +188,6 @@ Vector3s SerialFluid::calcGradConstraint(Vector3s& pi, Vector3s& pj){
 }
 
 Vector3s SerialFluid::calcGradConstraintAtI(int p){
-    // Bah
     Vector3s sumGrad(0.0, 0.0, 0.0); 
     // For neighbors, sum wSpikyKernelGrad(pi, pj, m_h)
     int gi; 
@@ -333,8 +201,6 @@ Vector3s SerialFluid::calcGradConstraintAtI(int p){
             }
         }
     }       
-    
-        
     return (scalar)(m_fpmass) * sumGrad / m_p0; 
 
 }
@@ -369,6 +235,7 @@ void SerialFluid::calculateLambdas(){
     }
 }
 
+// Calculate appropriate change in position to best solve constraint
 void SerialFluid::calculatedPos(){
     memset(m_dpos, 0, getNumParticles() * sizeof(Vector3s)); 
     for(int p = 0; p < getNumParticles(); ++p){
@@ -404,14 +271,9 @@ void SerialFluid::accumulateForce(Scene& scene){
         fluidForces[i]->addGradEToTotal(m_pos, m_vel, m_fpmass, m_accumForce, getNumParticles());
     }
 
-    // F *= -1.0/mass
     for(int i = 0; i < getNumParticles(); ++i){
         m_accumForce[i] /= -m_fpmass; 
-        //m_accumForce[i*3] /= -m_fpmass; 
-        //m_accumForce[i*3+1] /= -m_fpmass;
-        //m_accumForce[i*3+2] /= -m_fpmass;
     }
-    //printVec3(m_accumForce[0]); 
 }
 
 void SerialFluid::updateVelocityFromForce(scalar dt){
@@ -426,10 +288,8 @@ void SerialFluid::updatePredPosition(scalar dt){
     }
 }
 
+// Determine which grid this position is in
 void SerialFluid::getGridIdx(Vector3s &pos, int &idx, int &idy, int &idz){
-    // in our case...
-    //printVec3(pos);
-
     idx = (pos[0] - m_boundingBox->minX())/m_h; 
     idy = (pos[1] - m_boundingBox->minY())/m_h;
     idz = (pos[2] - m_boundingBox->minZ())/m_h; 
@@ -440,7 +300,6 @@ void SerialFluid::getGridIdx(Vector3s &pos, int &idx, int &idy, int &idz){
     assert(idx < m_gridX);
     assert(idy < m_gridY);
     assert(idz < m_gridZ);
-    //idx = (m_gridX * m_gridY) * k + (m_gridX) * j + i; 
 }
 
 int SerialFluid::getGridIdx(int i, int j, int k){
@@ -455,12 +314,8 @@ void SerialFluid::clearGrid(){
 
 // Each particle calculates its index in the grid
 // The grid gets its list of particles... 
-// GPU version presumably with atomic adds? hopefully particles won't try to write to the 
-// same grid at once too often, but when it does, deal with it atomically? 
-// Still sucks for coalescence and things though. 
 void SerialFluid::buildGrid(){
     for(int i= 0; i < getNumParticles(); ++i){
-        //getGridIdx(m_ppos[i*3], m_ppos[i*3+1], m_ppos[i*3+2], m_gridInd[i]); 
         getGridIdx(m_ppos[i], m_gridInd[i*3], m_gridInd[i*3+1], m_gridInd[i*3+2]); // which grid location am I in 
      }
 
@@ -505,17 +360,6 @@ void SerialFluid::updateFinalPosition(){
 void SerialFluid::applydPToPredPos(){
     for(int i = 0; i < getNumParticles(); ++i){
         m_ppos[i] += m_dpos[i]; 
-
-    /*        
-        if(glm::length(m_dpos[i]) > 5.0){
-            std::cout << "huge update at " << i << std::endl;
-            std::cout << "  pressure: " << m_pcalc[i] << std::endl;
-            std::cout << "  lambda: " << m_lambda[i] << std::endl;
-            std::cout << "  grid: " << m_gridInd[i] << std::endl;
-            std::cout << "  grid count: " << m_gridCount[m_gridInd[i]] << std::endl;
-
-        }
- */       
     }
     
 }

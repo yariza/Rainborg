@@ -42,17 +42,17 @@ public:
 
 
 protected:
+ 
+    scalar m_fpmass; // 'mass' per particle
+    scalar m_p0; // rest density
+    scalar m_h; // kernel width
+    int m_iters; // number of iterations through constraint solver
+    int m_maxNeighbors; // max number of expected neighbors
+    int m_minNeighbors; // min number of neighbors to use calculations
 
-    scalar m_fpmass;
-    scalar m_p0;
-    scalar m_h;
-    int m_iters;
-    int m_maxNeighbors;
-    int m_minNeighbors;
-
-    std::vector<FluidVolume> m_volumes;
-    FluidBoundingBox* m_boundingBox; 
-    Vector4s *m_colors;     
+    std::vector<FluidVolume> m_volumes; // initial volumes from fluid parsing
+    FluidBoundingBox* m_boundingBox; // the boundary associated with this fluid
+    Vector4s *m_colors; // colors!
 
 
 };

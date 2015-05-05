@@ -4,6 +4,8 @@
 #include "SerialFluid.h"
 #include "OpenGLRenderer.h"
 
+
+// This class handles the rendering of the fluid particles
 class FluidRenderer : public OpenGLRenderer
 {
 public:

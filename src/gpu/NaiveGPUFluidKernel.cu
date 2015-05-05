@@ -8,19 +8,21 @@
 #include <thrust/pair.h>
 #include <thrust/execution_policy.h>
 
-const int naive_BLOCKSIZE_1D = 512;
+const int naive_BLOCKSIZE_1D = 512; 
 
-bool naive_deviceHappy = true;
+// Flag to make sure that these functions aren't run until the GPU is ready and responsive
+bool naive_deviceHappy = true; 
 
-__constant__ scalar c_h;
-__constant__ scalar c_minX;
+// Things that don't change are constant
+__constant__ scalar c_h; // kernel width
+__constant__ scalar c_minX; // scene boundaries
 __constant__ scalar c_maxX;
 __constant__ scalar c_minY;
 __constant__ scalar c_maxY;
 __constant__ scalar c_minZ;
 __constant__ scalar c_maxZ;
-__constant__ scalar c_eps;    
-__constant__ scalar c_qscale;
+__constant__ scalar c_eps; // epsilon
+__constant__ scalar c_qscale; // used for artificial pressure 
 __constant__ int c_gridSizeX;
 __constant__ int c_gridSizeY;
 __constant__ int c_gridSizeZ;
@@ -35,13 +37,13 @@ __device__ void naive_getGridLocationFromIndex(int id, int &i, int &j, int &k);
 __host__ void naive_getGridSize(FluidBoundingBox* fbox, scalar h,
                                int &gridSizeX, int &gridSizeY, int &gridSizeZ);
 
+// GPU functions
+// These are analogous to the serial version
+
 __device__ Vector3s naive_getFluidVolumePosition(FluidVolume& volume, int k);
 
-
- // GPU functions
-
+// kernel functions
 __device__ __host__ scalar naive_wPoly6Kernel(Vector3s pi, Vector3s pj, scalar H);
-
 
 __device__ __host__ Vector3s naive_wSpikyKernelGrad(Vector3s pi, Vector3s pj, scalar H);
 
@@ -73,14 +75,11 @@ __global__ void naive_buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount,
 
 __global__ void applydPToPPos(Vector3s* d_ppos, Vector3s* d_dpos, int num_particles);
 
-
 __global__ void calcPressures(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc, int num_particles, int max_neigh, scalar fp_mass, scalar p0, scalar h); 
 
 __global__ void calcLambdas(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_pcalc, scalar *d_lambda, int num_particles, int max_neigh, scalar p0, scalar h, scalar fp_mass); 
 
 __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_lambda, int num_particles, int max_neigh, scalar h, scalar p0, scalar fp_mass); 
-
-
 
 
  
@@ -91,6 +90,7 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
                         FluidBoundingBox* h_boundingBox,
                         scalar h, bool random){
 
+	// Allocate memory and initialize values
     int num_particles = 0;
     for(int i = 0; i < num_volumes; i++){
         num_particles += h_volumes[i].m_numParticles;
@@ -117,10 +117,12 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     naive_initColors<<<gridSize, naive_BLOCKSIZE_1D>>>(*d_color, g_volumes, num_particles, num_volumes); 
     GPU_CHECKERROR(cudaGetLastError()); 
 
+	// If using the grid, initialize values appropriately
     if(!random) {
         naive_initializePositions<<<gridSize, naive_BLOCKSIZE_1D>>>(*d_pos, g_volumes, num_particles, num_volumes); 
         GPU_CHECKERROR(cudaGetLastError()); 
     }
+	// Otherwise initialize random values here and copy over (it's okay since it happens only once)
     else{
         Vector3s *h_pos; 
         GPU_CHECKERROR(cudaMallocHost((void **)&h_pos, num_particles * sizeof(Vector3s))); 
@@ -181,19 +183,16 @@ void naive_initGPUFluid(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, V
     scalar q_scale = naive_wPoly6Kernel(Vector3s(0, 0, 0), dq, h);
     GPU_CHECKERROR(cudaMemcpyToSymbol(c_qscale, &q_scale, sizeof(scalar))); 
 
-
-
     GPU_CHECKERROR(cudaMalloc((void **)d_grid, gridSizeX * gridSizeY * gridSizeZ * max_neigh * sizeof(int)));
     GPU_CHECKERROR(cudaMalloc((void **)d_gridCount, gridSizeX * gridSizeY * gridSizeZ *sizeof(int)));
     GPU_CHECKERROR(cudaMalloc((void **)d_gridInd, 3 * num_particles * sizeof(int)));
 
     GPU_CHECKERROR(cudaMemset((void *)*d_vel, 0, num_particles * sizeof(Vector3s)));
 
-
     GPU_CHECKERROR(cudaThreadSynchronize());
     GPU_CHECKERROR(cudaFree(g_volumes));
 
-    std::cout << "Done fluid init on gpu" << std::endl;
+    //std::cout << "Done fluid init on gpu" << std::endl;
 }
 
 void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3s *d_dpos, Vector3s *d_omega, 
@@ -210,7 +209,6 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
     
     int gridSizeX, gridSizeY, gridSizeZ;
     naive_getGridSize(h_boundingBox, h, gridSizeX, gridSizeY, gridSizeZ);
-    //int grid_size = gridSizeX * gridSizeY * gridSizeZ;
 
     // update predicted values from forces
     int gridSize = ceil(num_particles / (1.0 * naive_BLOCKSIZE_1D)); 
@@ -254,8 +252,6 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
         GPU_CHECKERROR(cudaGetLastError());
         GPU_CHECKERROR(cudaThreadSynchronize());
 
-
-
         // Preserve boundary
         preserveFluidBoundary<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_ppos, d_dpos, num_particles); 
         GPU_CHECKERROR(cudaGetLastError());
@@ -264,8 +260,7 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
         // Apply dp to ppos
         applydPToPPos<<<gridSize, naive_BLOCKSIZE_1D>>>(d_ppos, d_dpos, num_particles);
         GPU_CHECKERROR(cudaGetLastError());
-        GPU_CHECKERROR(cudaThreadSynchronize());
-            
+        GPU_CHECKERROR(cudaThreadSynchronize());            
 
     }
 
@@ -290,7 +285,6 @@ void naive_stepFluid(Vector3s *d_pos, Vector3s *d_vel, Vector3s *d_ppos, Vector3
     #if naive_VORTICITY == 0
     return;
     #endif
-    //applyVorticity<<<gridSize, naive_BLOCKSIZE_1D>>>(d_pos, d_vel, d_omega, d_grid, d_gridCount, d_gridInd, dt, fp_mass, num_particles, max_neigh);
     GPU_CHECKERROR(cudaGetLastError());
     GPU_CHECKERROR(cudaThreadSynchronize());
 }
@@ -307,10 +301,7 @@ void naive_updateVBO(float *vboptr, Vector3s *d_pos, char *d_color, int num_part
     else{
         naive_deviceHappy = true;
     }
-    GPU_CHECKERROR(cudaDeviceSynchronize());
-
-    
-
+    GPU_CHECKERROR(cudaDeviceSynchronize()); 
 }
 
 void naive_cleanUp(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector3s **d_dpos, Vector3s **d_omega, 
@@ -331,23 +322,13 @@ void naive_cleanUp(Vector3s **d_pos, Vector3s **d_vel, Vector3s **d_ppos, Vector
     GPU_CHECKERROR(cudaFree(*d_gridInd));
 
     GPU_CHECKERROR(cudaFree(*d_color));
-    
 }
-
-
-
-
-
-
-
-
 
 __host__ void naive_getGridSize(FluidBoundingBox* fbox, scalar h, int &gridSizeX, int &gridSizeY, int &gridSizeZ){
 
     gridSizeX = ceil(fbox->width() / h);
     gridSizeY = ceil(fbox->height() / h);
     gridSizeZ = ceil(fbox->depth() / h);
-
 }
 
 __device__ void naive_getGridLocation(Vector3s pos, int &i, int &j, int &k) {
@@ -382,8 +363,6 @@ __device__ Vector3s naive_getFluidVolumePosition(FluidVolume& volume, int k) {
         int xindex = (k / zlen / ylen) % xlen;
         int yindex = (k / zlen) % ylen;
         int zindex = k % zlen;
-
-        // printf("%f - %d, %d, %d\n", volume.m_dens_cbrt, xindex, yindex, zindex);
 
         scalar x = xindex * volume.m_dens_cbrt;
         scalar y = yindex * volume.m_dens_cbrt;
@@ -635,6 +614,7 @@ __global__ void preserveFluidBoundary(Vector3s *d_pos, Vector3s *d_ppos, Vector3
     }
 }
 
+// Build grid: place particles in appropriate grid bucket
 __global__ void naive_buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int *d_gridInd, int num_particles, int max_neigh){
     int id = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(id >= num_particles){
@@ -655,6 +635,8 @@ __global__ void naive_buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount,
       
     bool placed = false;
     int startgid = actgid; 
+	// Because all particles are doing this at the same time, need to prevent particles from overwriting each other
+	// So use atomicCAS: know that empty locations have a value of -1 
     while(!placed){
         int result = atomicCAS(&(d_grid[actgid]), -1, id);
         if(result == -1){
@@ -668,7 +650,7 @@ __global__ void naive_buildGrid(Vector3s *d_ppos, int *d_grid, int *d_gridCount,
             actgid ++;
         }
     }
-    //d_grid[gid * max_neigh + d_gridCount[gid]] = id;
+	// It really doesn't matter when gridCount reaches its proper value so long as it does by the time the kernel finishes
     if(placed)
         atomicAdd(&d_gridCount[gid], 1);
 }
@@ -744,7 +726,6 @@ __global__ void calcLambdas(Vector3s *d_ppos, int *d_grid, int *d_gridCount, int
 } 
 
  
- 
 __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d_gridCount, int *d_gridInd, scalar *d_lambda, int num_particles, int max_neigh, scalar h, scalar p0, scalar fp_mass){
     int p = (blockIdx.x * blockDim.x) + threadIdx.x;
     if(p >= num_particles)
@@ -780,8 +761,6 @@ __global__ void calcdPos(Vector3s *d_ppos, Vector3s *d_dpos, int *d_grid, int *d
     d_dpos[p] = fp_mass * dp / p0;
     //d_dpos[p] = Vector3s(.1, 0, 0);
 }
-
-
 
 __device__ Vector3s calcGradConstraint(Vector3s pi, Vector3s pj, scalar h, scalar fp_mass, scalar p0){
     return (fp_mass*naive_wSpikyKernelGrad(pi, pj, h)/(scalar(- p0))); 

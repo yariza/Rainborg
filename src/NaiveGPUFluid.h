@@ -9,6 +9,7 @@
 
 class Scene;
 
+// Header for the naive GPU fluid
 class NaiveGPUFluid : public Fluid {
 
 public:
@@ -29,10 +30,10 @@ private:
     Vector3s *d_omega;
     scalar *d_pcalc; 
     scalar *d_lambda;
-    int *d_grid;
-    int *d_gridCount;
-    int *d_gridInd;   
-    bool m_random; 
-    char *d_color;
+    int *d_grid; // scene gridded into 3D buckets, store the particles inside: size (width/h)*(height/h)*(depth/h)*max_neighbors 
+    int *d_gridCount; // store the number of particles per grid
+    int *d_gridInd; // for each particle store the id of the grid it's in
+    bool m_random; // when initializing, use grid or assign randomly?
+    char *d_color; // particle colors
 };
 #endif

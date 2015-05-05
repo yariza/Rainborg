@@ -11,6 +11,7 @@
 
 class Fluid;
 
+// The "scene" contains the fluids, the forces, and all of the boundary objects
 class Scene
 {
 public:

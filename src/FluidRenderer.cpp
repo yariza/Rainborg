@@ -45,6 +45,7 @@ FluidRenderer::FluidRenderer(Fluid* fluid)
             indices[i] = i;
         }
 
+		// use VBO's for gpu usage: keep everything on gpu without having to transfer
         glGenBuffers(1, &vbo);
         glGenBuffers(1, &ibo);
 
@@ -81,7 +82,6 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
     Matrix4 matrixIdentity;
     matrixIdentity.setToIdentity();
 
-    // m_shader.setVector3Uniform("cameraWorldPosition", viewer->getCamera().getOrigin());
     m_shader.setMatrix4x4Uniform("modelToWorldMatrix", matrixIdentity);
     m_shader.setMatrix4x4Uniform("worldToCameraMatrix", camera.getTransformMatrix().getInverse());
     m_shader.setMatrix4x4Uniform("projectionMatrix", camera.getProjectionMatrix());
@@ -89,16 +89,12 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
     glPointSize(6.0);
     glEnable(GL_POINT_SMOOTH);
 
-    //glEnable(GL_VERTEX_ARRAY);
-    //glEnable(GL_COLOR_ARRAY);
-
     int num_particles = m_fluid->getNumParticles();
  
     if (g_gpu_mode) {
 
         float *dptrvert=NULL;
-    
-    
+     
         #ifdef GPU_ENABLED
         GPU_CHECKERROR(cudaGLMapBufferObject((void**)&dptrvert, vbo));
         m_fluid->updateVBO(dptrvert);
@@ -128,13 +124,10 @@ void FluidRenderer::render(GLFWViewer* viewer, int width, int height) {
 
         Vector3s* posArray = serialFluid->getFPPos();
         Vector4s* colorArray = serialFluid->getColors();
-
-        
+    
         glBegin(GL_POINTS);
             for (int i=0; i<serialFluid->getNumParticles(); i++) {
-                //glColor3f(); 
                 glColor4f(colorArray[i][0], colorArray[i][1], colorArray[i][2], colorArray[i][3]);
-                //glColor3f(colorArray[i][0], colorArray[i][1], colorArray[i][2]);
                 glVertex3f(posArray[i].x, posArray[i].y, posArray[i].z);
             }
         glEnd();

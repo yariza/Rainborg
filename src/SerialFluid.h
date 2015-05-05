@@ -12,6 +12,7 @@
 
 class Scene;
 
+// The serial implementation of a fluid
 class SerialFluid : public Fluid{
 
 public:
@@ -19,21 +20,17 @@ public:
     SerialFluid(scalar mass, scalar p0, scalar h, int iters, int maxNeigh = 20, int minNeighbor = 3);
     SerialFluid(const SerialFluid& otherFluid);
     virtual ~SerialFluid();
-
     virtual void stepSystem(Scene& scene, scalar dt);
-    // void setFPPos(int fp, const Vector3s& pos);
     virtual void setFPVel(int fp, const Vector3s& vel);
     virtual void setBoundingBox(FluidBoundingBox* newBound);
     virtual void setColor(int i, const Vector4s& col); 
 
     virtual void loadFluidVolumes();
+	
     virtual void updateVBO(float* vboptr);
 
-    //scalar* getFPPos() const;
-    //scalar* getFPVel() const;
     virtual Vector3s* getFPPos() const;
     virtual Vector3s* getFPVel() const; 
-//    virtual Vector4s* getColors() const;
 
 private: 
 
@@ -42,7 +39,6 @@ private:
     void updatePredPosition(scalar dt); 
     void clearGrid();
     void buildGrid(); // how to parallelize? 
-//    void getGridIdx(scalar x, scalar y, scalar z, int& idx); // make separate in case of smarter coallesced memory access    
     void getGridIdx(Vector3s &pos, int& idx, int& idy, int &idz);  
     int getGridIdx(int i, int j, int k); 
 
@@ -66,30 +62,22 @@ private:
     int *m_grid; // grid of particles, x, then y, then z, size w*h*d*maxNeighbors
     int *m_gridCount; // store number of particles in grid so far (needed for GPU)
     int *m_gridInd; // indices for grid per particle
-    int m_gridX; 
-    int m_gridY; 
-    int m_gridZ; 
+    int m_gridX; // width
+    int m_gridY; // height
+    int m_gridZ; // depth
 
     scalar *m_pcalc; // calculated pressure
-    //scalar *m_pos; // actual positinos
-    //scalar *m_ppos; // predicted positions
     scalar *m_lambda; // calculated lambdas 
-    //scalar *m_dpos; // change in positions
-    //scalar *m_vel; 
 
-    Vector3s *m_pos; 
-    Vector3s *m_ppos; 
-    Vector3s *m_dpos; 
-    Vector3s *m_vel; 
+    Vector3s *m_pos; // particle positions
+    Vector3s *m_ppos; // particle predicted positions
+    Vector3s *m_dpos; // particle change in position
+    Vector3s *m_vel; // particle velocities
 
     scalar m_eps; 
 
-    //scalar *m_accumForce; 
     Vector3s *m_accumForce;
 
-
-    // Colors? 
-    //Vector4s *m_colors;     
 
  
 };

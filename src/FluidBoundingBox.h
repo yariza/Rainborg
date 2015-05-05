@@ -5,6 +5,7 @@
 #include "FluidBoundary.h"
 #include "MathDefs.h"
 
+// Bounding box for fluid; fluid must remain inside
 class FluidBoundingBox : public FluidBoundary {
 public: 
     FluidBoundingBox();
@@ -13,7 +14,6 @@ public:
     FluidBoundingBox& operator=(const FluidBoundingBox& otherBound);
 
     virtual ~FluidBoundingBox(); 
-    //virtual void dealWithCollisions(scalar *pos, scalar *dpos, int numParticles); 
     virtual void dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numParticles); 
 
     // Need the bounds for calculating the grid
@@ -30,7 +30,7 @@ public:
     scalar depth(); // Z
 
 private: 
-    scalar m_minX; 
+    scalar m_minX; // boundaries
     scalar m_maxX;
     scalar m_minY;
     scalar m_maxY;

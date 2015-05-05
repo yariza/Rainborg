@@ -91,6 +91,7 @@ scalar FluidBrick::depth(){
     return m_maxZ - m_minZ;
 }
 
+// Make sure fluid particles are outside the bounds 
 void FluidBrick::dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numParticles){    
     scalar pposX; 
     scalar pposY; 
@@ -107,17 +108,17 @@ void FluidBrick::dealWithCollisions(Vector3s *pos, Vector3s *dpos, int numPartic
         pposZ = pos[i][2] + dpos[i][2]; 
 
         if(pposX < m_minX - m_eps)
-            return;
+            continue;
         if(pposX > m_maxX + m_eps)
-            return;
+            continue;
         if(pposY < m_minY - m_eps)
-            return;
+            continue;
         if(pposY > m_minY + m_eps)
-            return;
+            continue;
         if(pposZ < m_minZ - m_eps)
-            return;
+            continue;
         if(pposZ > m_maxZ + m_eps)
-            return;
+            continue;
 
         // So inside the cube; push to nearest position?
         if(pposX > midX){

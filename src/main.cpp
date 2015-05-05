@@ -22,7 +22,6 @@
 #include "YImage.h"
 
 #ifdef GPU_ENABLED
-// #include "gpu/GPUFluidNaive.h"
 #include <cuda.h>
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
@@ -63,9 +62,6 @@ void dumpPNG(const std::string &filename);
 Simulation* g_simulation;
 openglframework::GLFWViewer* g_viewer;
 openglframework::Color g_bgcolor(0.0, 0.0, 0.0, 1.0);
-//openglframework::Color g_bgcolor(60.0/255.0, 54.0/255.0, 54.0/255.0, 1.0);
-
-
 
 bool g_rendering_enabled = true;
 double g_sec_per_frame;
@@ -88,21 +84,24 @@ bool g_simulation_ran_to_completion = false;
 std::string g_xml_scene_file;
 std::string g_description;
 
-// gpu mode?
+// gpu mode? vs. serial
 bool g_gpu_mode;
+
 
 void printTimingResults(){
     gettimeofday(&endTime, 0);
-    
+	    
     totalTime = (1000000.0*(endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec))/1000.0; // milliseconds
     avgTime = totalTime / (g_current_step - startStep); 
+	if(g_current_step == startStep) // didn't actually do anything
+		return;
     std::cout << "Total time: " << totalTime << " ms" << std::endl;
     std::cout << "Avg. frame time: " << avgTime << " ms "
               << "(" << 1000.0f/avgTime << ") fps" << std::endl;
 }
 
 
-
+// Parse the command line to get options
 void parseCommandLine(int argc, char **argv) {
 
     try
@@ -189,10 +188,6 @@ int main(int args, char **argv)
 
     loadScene(g_xml_scene_file);
 
-    // Wow this is going to be my terrible, terrible 'test' function thing
-    // testBasicSetup();
-    
-
     #ifdef GPU_ENABLED
     if(g_gpu_mode && g_rendering_enabled){
         GPU_CHECKERROR(cudaGLSetGLDevice( gpuGetMaxGflopsDeviceId() ));
@@ -220,6 +215,7 @@ int main(int args, char **argv)
     return 0;
 }
 
+// Step the system, calling the simulation's own stepSystem
 void stepSystem() {
 
     // Determine if the simulation is complete
@@ -246,15 +242,16 @@ void stepSystem() {
         g_simulation->stepSystem(g_dt);
     }
 
-    if (g_rendering_enabled) {
+    //if (g_rendering_enabled) {
         // std::cout << outputmod::startgreen << "Time step: " << outputmod::endgreen
                   // << (g_current_step*g_dt) << std::endl;
-    }
+    //}
     
     g_current_step++;
 
     if (g_rendering_enabled) {
 #ifdef PNGOUT
+		// Save frame to png
         std::stringstream oss;
         oss << "pngs/frame" << std::setw(5) << std::setfill('0') << g_current_step << ".png";
         dumpPNG(oss.str());
@@ -285,11 +282,8 @@ void headlessSimLoop() {
 // idle function from GLFW
 void idle() {
 
-    //std::cout << "g_last_time: " << g_last_time << std::endl;
     // Trigger the next timestep
     double current_time = timingutils::seconds();
-    //std::cout << "current_time: " << current_time << std::endl;
-    //std::cout << "g_sec_per_frame: " << g_sec_per_frame << std::endl;
     if( !g_paused && current_time-g_last_time >= g_sec_per_frame )
     {
       g_last_time = current_time;
